@@ -363,6 +363,164 @@
             100% { transform: scale(0); opacity: 0; }
         }
 
+        /* 日志框样式 */
+        #log-container {
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            width: 320px;
+            max-height: calc(100vh - 120px);
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 12px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        #log-container.hidden {
+            display: none;
+        }
+
+        #log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+
+        #log-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        #log-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #log-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        #log-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-entry {
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .log-entry.score {
+            border-left-color: #ffd700;
+        }
+
+        .log-entry.item {
+            border-left-color: #2ecc71;
+        }
+
+        .log-entry.system {
+            border-left-color: #e74c3c;
+        }
+
+        .log-entry.combo {
+            border-left-color: #ff6b6b;
+        }
+
+        .log-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 4px;
+        }
+
+        .log-message {
+            line-height: 1.4;
+        }
+
+        .log-formula {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 6px;
+            border-radius: 3px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #log-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #log-content::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        #log-content::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        #log-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* 切换按钮（当日志框隐藏时） */
+        #show-log-btn {
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 49;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        #show-log-btn:hover {
+            background: rgba(0,0,0,0.9);
+        }
+
+        @media (max-width: 768px) {
+            #log-container {
+                width: 280px;
+                right: 10px;
+                top: 80px;
+            }
+
+            #show-log-btn {
+                right: 10px;
+                top: 80px;
+            }
+        }
+
         @keyframes combo {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
@@ -453,6 +611,16 @@
         <button onclick="game.restart()">重新开始</button>
         <button onclick="game.showRules()">规则</button>
     </div>
+
+    <!-- 日志容器 -->
+    <div id="log-container">
+        <div id="log-header">
+            <h3>📜 游戏日志</h3>
+            <button id="log-toggle" onclick="game.toggleLog()">隐藏</button>
+        </div>
+        <div id="log-content"></div>
+    </div>
+    <button id="show-log-btn" onclick="game.toggleLog()">📜 显示日志</button>
 
     <div class="combo-display" id="combo-display"></div>
 

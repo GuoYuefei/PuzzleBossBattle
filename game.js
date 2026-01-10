@@ -76,6 +76,10 @@ class Match3Game {
         this.tripleComboCount = 0;
         this.swapModeActive = false;
         this.firstSwapCell = null;
+        this.highlightedCells = []; // 存储放大镜高亮的方块
+        this.gameLog = []; // 游戏日志
+        this.logContainer = null;
+        this.logContent = null;
 
         // 形状配置
         this.shapes = ['triangle', 'square', 'circle', 'star'];
@@ -153,6 +157,7 @@ class Match3Game {
         this.renderBoard();
         this.setupEventListeners();
         this.updateItemsDisplay();
+        this.initLogDisplay();
     }
 
     createBoard() {
@@ -328,6 +333,11 @@ class Match3Game {
 
         const row = parseInt(cell.dataset.row);
         const col = parseInt(cell.dataset.col);
+
+        // 选择第一个格子时，清除放大镜的高亮
+        if (this.selectedCell === null) {
+            this.clearHighlightedCells();
+        }
 
         if (this.selectedCell === null) {
             // 选择第一个格子
@@ -675,9 +685,14 @@ class Match3Game {
             comboMultiplier = Math.min(comboCount, 5);
         }
 
+        let scoreFormula = '';
+        let matchType = '';
+
         if (matchAnalysis.type === 'five') {
             // 五连消除：翻倍
             totalScore += totalCells * shapeScore * colorMultiplier * 2 * comboMultiplier;
+            scoreFormula = `${totalCells}×${shapeScore}×${colorMultiplier}×2×${comboMultiplier}`;
+            matchType = '五连消除';
             this.showMatchEffect('五连消除！');
         } else if (matchAnalysis.type === 'special') {
             // T型特殊消除：晋级
@@ -688,11 +703,18 @@ class Match3Game {
             const promotedColorMultiplier = this.colorMultipliers[nextColor];
 
             totalScore += totalCells * promotedShapeScore * promotedColorMultiplier * comboMultiplier;
+            scoreFormula = `${totalCells}×${promotedShapeScore}(晋级)×${promotedColorMultiplier}(晋级)×${comboMultiplier}`;
+            matchType = 'T型晋级消除';
             this.showMatchEffect('T型晋级消除！');
         } else {
             // 普通消除（包括L型）：只计算基本分数
             totalScore += totalCells * shapeScore * colorMultiplier * comboMultiplier;
+            scoreFormula = `${totalCells}×${shapeScore}×${colorMultiplier}×${comboMultiplier}`;
+            matchType = matchAnalysis.type === 'L' ? 'L型消除' : '普通消除';
         }
+
+        // 添加得分日志
+        this.addLog('得分', `${matchType} +${Math.floor(totalScore)}分`, 'score', scoreFormula);
 
         return Math.floor(totalScore);
     }
@@ -790,13 +812,16 @@ class Match3Game {
     }
 
     addScore(points) {
+        let originalPoints = points;
+        let tripleMultiplier = null;
+
         // 检查三部曲倍率
         if (this.tripleComboActive) {
             const multipliers = [0.1, 0.5, 0.8, 1, 1.5, 2, 3];
-            const multiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
-            points = Math.ceil(points * multiplier);
+            tripleMultiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
+            points = Math.ceil(points * tripleMultiplier);
             this.tripleComboCount++;
-            this.showMatchEffect(`三部曲 x${multiplier.toFixed(1)} = ${points}分`);
+            this.showMatchEffect(`三部曲 x${tripleMultiplier.toFixed(1)} = ${points}分`);
 
             if (this.tripleComboCount >= 3) {
                 this.tripleComboActive = false;
@@ -904,6 +929,8 @@ class Match3Game {
     // 道具系统相关方法
     giveRandomItem() {
         const rand = Math.random();
+        const scoreMilestone = Math.floor(this.score / 100) * 100;
+        let item;
 
         if (rand < 0.8) {
             // 80%概率获得普通道具
@@ -912,9 +939,12 @@ class Match3Game {
                 ITEM_TYPES.BOMB,
                 ITEM_TYPES.REFRESH
             ];
-            const item = normalItems[Math.floor(Math.random() * normalItems.length)];
+            item = normalItems[Math.floor(Math.random() * normalItems.length)];
             this.items[item.id]++;
             this.showItemGain(item);
+            this.addLog('道具获得',
+                `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
+                'item');
         } else {
             // 20%概率获得特殊道具
             const specialItems = [
@@ -922,9 +952,12 @@ class Match3Game {
                 ITEM_TYPES.TRIPLE_COMBO,
                 ITEM_TYPES.SWAP
             ];
-            const item = specialItems[Math.floor(Math.random() * specialItems.length)];
+            item = specialItems[Math.floor(Math.random() * specialItems.length)];
             this.items[item.id]++;
             this.showItemGain(item);
+            this.addLog('道具获得',
+                `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
+                'item');
         }
 
         this.updateItemsDisplay();
@@ -1002,6 +1035,7 @@ class Match3Game {
 
         if (possibleMatches.length === 0) {
             this.showMatchEffect('没有可消除的方块！');
+            this.addLog('放大镜', '没有可消除的方块', 'system');
             return;
         }
 
@@ -1010,19 +1044,30 @@ class Match3Game {
             .sort(() => Math.random() - 0.5)
             .slice(0, 3);
 
-        // 高亮显示选中的方块
+        // 清除之前的高亮
+        this.clearHighlightedCells();
+
+        // 高亮显示选中的方块（持续到下一次交换）
         selected.forEach(({ row, col }) => {
             const index = row * this.boardSize + col;
             const cell = this.boardEl.children[index];
             if (cell) {
                 cell.classList.add('highlighted');
-                setTimeout(() => cell.classList.remove('highlighted'), 2000);
+                this.highlightedCells.push({ row, col, cell });
             }
         });
 
         this.items[ITEM_TYPES.MAGNIFYING_GLASS.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('找到' + selected.length + '个可消除的方块！');
+        this.addLog('放大镜', `找到 ${selected.length} 个可消除的方块（持续到下次交换）`, 'item');
+    }
+
+    clearHighlightedCells() {
+        this.highlightedCells.forEach(({ cell }) => {
+            cell.classList.remove('highlighted');
+        });
+        this.highlightedCells = [];
     }
 
     useBomb() {
@@ -1075,6 +1120,7 @@ class Match3Game {
         this.items[ITEM_TYPES.BOMB.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('爆炸！消除了' + destroyed.length + '个方块！');
+        this.addLog('炸弹', `炸除了 ${destroyed.length} 个方块（3×3区域）`, 'item');
     }
 
     useRefresh() {
@@ -1089,6 +1135,7 @@ class Match3Game {
         this.items[ITEM_TYPES.REFRESH.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('棋盘已刷新！');
+        this.addLog('刷新', '重新生成了所有方块', 'item');
     }
 
     useColorChange() {
@@ -1105,6 +1152,7 @@ class Match3Game {
         this.items[ITEM_TYPES.COLOR_CHANGE.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('所有方块已变为蓝色！');
+        this.addLog('改色', '将所有方块变为蓝色（系数×1.5）', 'item');
     }
 
     useTripleCombo() {
@@ -1113,6 +1161,7 @@ class Match3Game {
         this.items[ITEM_TYPES.TRIPLE_COMBO.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('三部曲激活！接下来三步随机倍率！');
+        this.addLog('三部曲', '接下来3步随机倍率（0.1/0.5/0.8/1/1.5/2/3）', 'item');
     }
 
     useSwap() {
@@ -1121,6 +1170,7 @@ class Match3Game {
         this.items[ITEM_TYPES.SWAP.id]--;
         this.updateItemsDisplay();
         this.showMatchEffect('交换模式：点击两个方块进行交换');
+        this.addLog('交换', '进入交换模式，可选择任意两个方块交换', 'item');
 
         // 更新事件监听器
         this.setupSwapEventListeners();
@@ -1197,6 +1247,10 @@ class Match3Game {
             this.comboCount = 0;
             this.processMatches().then(() => {
                 this.isAnimating = false;
+                // 检查游戏是否结束
+                if (this.moves <= 0) {
+                    this.endGame();
+                }
             });
         } else {
             // 没有匹配，换回来
@@ -1465,6 +1519,66 @@ class Match3Game {
 
     closeModal() {
         document.getElementById('modal').classList.remove('active');
+    }
+
+    // 日志系统相关方法
+    initLogDisplay() {
+        this.logContainer = document.getElementById('log-container');
+        this.logContent = document.getElementById('log-content');
+        this.addLog('系统', '游戏开始！普通道具各1个，每100分获得随机道具', 'system');
+    }
+
+    addLog(title, message, type = 'normal', formula = '') {
+        if (!this.logContent) return;
+
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry ${type}`;
+
+        let html = `
+            <div class="log-time">${timeStr} ${title}</div>
+            <div class="log-message">${message}</div>
+        `;
+
+        if (formula) {
+            html += `<div class="log-formula">公式: ${formula} = ${this.evaluateFormula(formula)}</div>`;
+        }
+
+        logEntry.innerHTML = html;
+        this.logContent.appendChild(logEntry);
+
+        // 自动滚动到最新日志
+        this.logContent.scrollTop = this.logContent.scrollHeight;
+
+        // 保存到日志数组
+        this.gameLog.push({ title, message, type, formula, time: timeStr });
+    }
+
+    evaluateFormula(formula) {
+        try {
+            // 替换中文符号并计算
+            let expr = formula.replace(/×/g, '*').replace(/（.*?）/g, '');
+            return eval(expr);
+        } catch (e) {
+            return formula;
+        }
+    }
+
+    toggleLog() {
+        if (!this.logContainer) return;
+
+        const isHidden = this.logContainer.classList.contains('hidden');
+        const showBtn = document.getElementById('show-log-btn');
+
+        if (isHidden) {
+            this.logContainer.classList.remove('hidden');
+            showBtn.style.display = 'none';
+        } else {
+            this.logContainer.classList.add('hidden');
+            showBtn.style.display = 'block';
+        }
     }
 }
 

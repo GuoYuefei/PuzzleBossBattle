@@ -76,6 +76,7 @@ class Match3Game {
         this.tripleComboCount = 0;
         this.swapModeActive = false;
         this.firstSwapCell = null;
+        this.swapClickHandler = null; // 交换模式的事件处理器
         this.highlightedCells = []; // 存储放大镜高亮的方块
         this.gameLog = []; // 游戏日志
         this.logContainer = null;
@@ -1332,18 +1333,11 @@ class Match3Game {
     }
 
     setupSwapEventListeners() {
-        // 临时移除原始事件监听器，使用自定义逻辑
+        // 临时移除原始事件监听器
         this.boardEl.removeEventListener('click', this.originalClickHandler);
 
-        this.boardEl.onclick = (e) => {
-            // 如果不是交换模式，恢复原始逻辑
-            if (!this.swapModeActive) {
-                if (this.originalClickHandler) {
-                    this.originalClickHandler(e);
-                }
-                return;
-            }
-
+        // 创建交换模式的事件处理器
+        this.swapClickHandler = (e) => {
             if (this.isAnimating) return;
 
             const cell = e.target.closest('.cell');
@@ -1377,10 +1371,14 @@ class Match3Game {
                 this.swapModeActive = false;
 
                 // 恢复原始事件监听器
-                this.boardEl.removeEventListener('click', this.boardEl.onclick);
+                this.boardEl.removeEventListener('click', this.swapClickHandler);
                 this.boardEl.addEventListener('click', this.originalClickHandler);
+                this.swapClickHandler = null;
             }
         };
+
+        // 添加交换模式的事件监听器
+        this.boardEl.addEventListener('click', this.swapClickHandler);
     }
 
     swapPiecesWithoutCheck(row1, col1, row2, col2) {

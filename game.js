@@ -669,54 +669,137 @@ class Match3Game {
     calculateScore(matches, matchAnalysis, comboCount) {
         let totalScore = 0;
 
-        // 获取第一个匹配的图形信息
-        const firstMatch = matches[0];
-        const firstCell = firstMatch.cells[0];
-        const piece = this.board[firstCell.row][firstCell.col];
-
-        let shapeScore = this.shapeScores[piece.shape];
-        let colorMultiplier = this.colorMultipliers[piece.color];
-
-        const totalCells = matchAnalysis.totalCells;
-
         // 计算连击倍数（第2次*2，第3次*3，...，第5次及以上*5）
         let comboMultiplier = 1;
         if (comboCount >= 2) {
             comboMultiplier = Math.min(comboCount, 5);
         }
 
-        let scoreFormula = '';
+        // 收集所有匹配的格子信息，按形状和颜色分组
+        const matchedCells = new Set();
+        const shapeColorGroups = {};
+
+        for (const match of matches) {
+            for (const cell of match.cells) {
+                const key = `${cell.row},${cell.col}`;
+                if (!matchedCells.has(key)) {
+                    matchedCells.add(key);
+                    const piece = this.board[cell.row][cell.col];
+                    if (piece) {
+                        const groupKey = `${piece.shape}-${piece.color}`;
+                        if (!shapeColorGroups[groupKey]) {
+                            shapeColorGroups[groupKey] = {
+                                shape: piece.shape,
+                                color: piece.color,
+                                count: 0,
+                                shapeScore: this.shapeScores[piece.shape],
+                                colorMultiplier: this.colorMultipliers[piece.color]
+                            };
+                        }
+                        shapeColorGroups[groupKey].count++;
+                    }
+                }
+            }
+        }
+
+        // 确定消除类型
         let matchType = '';
+        let specialMultiplier = 1;
+        let typeBonus = '';
 
         if (matchAnalysis.type === 'five') {
-            // 五连消除：翻倍
-            totalScore += totalCells * shapeScore * colorMultiplier * 2 * comboMultiplier;
-            scoreFormula = `${totalCells}×${shapeScore}×${colorMultiplier}×2×${comboMultiplier}`;
             matchType = '五连消除';
+            specialMultiplier = 2;
+            typeBonus = '×2(五连)';
             this.showMatchEffect('五连消除！');
         } else if (matchAnalysis.type === 'special') {
-            // T型特殊消除：晋级
+            matchType = 'T型晋级消除';
+            // T型特殊消除：使用晋级后的分数
+            const firstMatch = matches[0];
+            const firstCell = firstMatch.cells[0];
+            const piece = this.board[firstCell.row][firstCell.col];
             const nextShape = this.getNextShape(piece.shape);
             const nextColor = this.getNextColor(piece.color);
 
-            const promotedShapeScore = this.shapeScores[nextShape];
-            const promotedColorMultiplier = this.colorMultipliers[nextColor];
-
-            totalScore += totalCells * promotedShapeScore * promotedColorMultiplier * comboMultiplier;
-            scoreFormula = `${totalCells}×${promotedShapeScore}(晋级)×${promotedColorMultiplier}(晋级)×${comboMultiplier}`;
-            matchType = 'T型晋级消除';
+            // 将所有分组的形状和颜色都晋级
+            for (const key in shapeColorGroups) {
+                shapeColorGroups[key].shapeScore = this.shapeScores[nextShape];
+                shapeColorGroups[key].colorMultiplier = this.colorMultipliers[nextColor];
+            }
+            typeBonus = '(晋级)';
             this.showMatchEffect('T型晋级消除！');
+        } else if (matchAnalysis.type === 'L') {
+            matchType = 'L型消除';
         } else {
-            // 普通消除（包括L型）：只计算基本分数
-            totalScore += totalCells * shapeScore * colorMultiplier * comboMultiplier;
-            scoreFormula = `${totalCells}×${shapeScore}×${colorMultiplier}×${comboMultiplier}`;
-            matchType = matchAnalysis.type === 'L' ? 'L型消除' : '普通消除';
+            matchType = '普通消除';
+        }
+
+        // 计算每种形状颜色组合的分数
+        const scoreDetails = [];
+        for (const key in shapeColorGroups) {
+            const group = shapeColorGroups[key];
+            const groupScore = group.count * group.shapeScore * group.colorMultiplier * specialMultiplier * comboMultiplier;
+            totalScore += groupScore;
+
+            const shapeName = this.getShapeName(group.shape);
+            const colorName = this.getColorName(group.color);
+            scoreDetails.push({
+                count: group.count,
+                shape: shapeName,
+                color: colorName,
+                shapeScore: group.shapeScore,
+                colorMultiplier: group.colorMultiplier,
+                score: groupScore
+            });
+        }
+
+        // 生成详细的计分公式
+        let formulaParts = [];
+        for (const detail of scoreDetails) {
+            const part = `${detail.count}(${detail.shape}+${detail.color})×${detail.shapeScore}×${detail.colorMultiplier}`;
+            if (specialMultiplier > 1) {
+                formulaParts.push(part + `×${specialMultiplier}`);
+            } else if (typeBonus) {
+                formulaParts.push(part + typeBonus);
+            } else {
+                formulaParts.push(part);
+            }
+        }
+
+        let formula = formulaParts.join(' + ');
+        if (comboMultiplier > 1) {
+            formula += ` ×${comboMultiplier}(连击)`;
+        }
+
+        // 添加三部曲倍率信息（如果有）
+        let tripleInfo = '';
+        if (this.tripleComboActive) {
+            tripleInfo = ` [三部曲第${this.tripleComboCount + 1}步]`;
         }
 
         // 添加得分日志
-        this.addLog('得分', `${matchType} +${Math.floor(totalScore)}分`, 'score', scoreFormula);
+        this.addLog('得分', `${matchType}${tripleInfo} +${Math.floor(totalScore)}分`, 'score', formula);
 
         return Math.floor(totalScore);
+    }
+
+    getShapeName(shape) {
+        const names = {
+            'triangle': '△',
+            'square': '□',
+            'circle': '○',
+            'star': '★'
+        };
+        return names[shape] || shape;
+    }
+
+    getColorName(color) {
+        const names = {
+            'green': '绿',
+            'blue': '蓝',
+            'red': '红'
+        };
+        return names[color] || color;
     }
 
     getNextShape(shape) {
@@ -819,13 +902,20 @@ class Match3Game {
         if (this.tripleComboActive) {
             const multipliers = [0.1, 0.5, 0.8, 1, 1.5, 2, 3];
             tripleMultiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
-            points = Math.ceil(points * tripleMultiplier);
+            const newPoints = Math.ceil(points * tripleMultiplier);
+            this.addLog('三部曲',
+                `第${this.tripleComboCount + 1}步：${points}分 × ${tripleMultiplier.toFixed(1)} = ${newPoints}分`,
+                'combo',
+                `${points} × ${tripleMultiplier.toFixed(1)} = ${newPoints}`
+            );
+            points = newPoints;
             this.tripleComboCount++;
             this.showMatchEffect(`三部曲 x${tripleMultiplier.toFixed(1)} = ${points}分`);
 
             if (this.tripleComboCount >= 3) {
                 this.tripleComboActive = false;
                 this.tripleComboCount = 0;
+                this.addLog('三部曲', '3步结束，三部曲效果已失效', 'combo');
             }
         }
 
@@ -1136,6 +1226,15 @@ class Match3Game {
         this.updateItemsDisplay();
         this.showMatchEffect('棋盘已刷新！');
         this.addLog('刷新', '重新生成了所有方块', 'item');
+
+        // 检查并消除匹配
+        setTimeout(async () => {
+            const matches = this.findMatches();
+            if (matches.length > 0) {
+                this.comboCount = 0;
+                await this.processMatches();
+            }
+        }, 300);
     }
 
     useColorChange() {
@@ -1153,6 +1252,15 @@ class Match3Game {
         this.updateItemsDisplay();
         this.showMatchEffect('所有方块已变为蓝色！');
         this.addLog('改色', '将所有方块变为蓝色（系数×1.5）', 'item');
+
+        // 检查并消除匹配
+        setTimeout(async () => {
+            const matches = this.findMatches();
+            if (matches.length > 0) {
+                this.comboCount = 0;
+                await this.processMatches();
+            }
+        }, 300);
     }
 
     useTripleCombo() {

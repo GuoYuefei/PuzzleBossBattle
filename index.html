@@ -381,6 +381,16 @@
             backdrop-filter: blur(10px);
         }
 
+        #log-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            /* 限制高度，约显示5-7行 */
+        }
+
         #log-container.hidden {
             display: none;
         }

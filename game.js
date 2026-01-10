@@ -1,3 +1,51 @@
+// 道具类型定义
+const ITEM_TYPES = {
+    // 普通道具
+    MAGNIFYING_GLASS: {
+        id: 'magnifying_glass',
+        name: '放大镜',
+        type: 'normal',
+        description: '找到随机三个可以消消乐的方块',
+        icon: '🔍'
+    },
+    BOMB: {
+        id: 'bomb',
+        name: '炸弹',
+        type: 'normal',
+        description: '炸除3*3的方块',
+        icon: '💣'
+    },
+    REFRESH: {
+        id: 'refresh',
+        name: '刷新道具',
+        type: 'normal',
+        description: '刷新游戏场地的所有方块',
+        icon: '🔄'
+    },
+    // 特殊道具
+    COLOR_CHANGE: {
+        id: 'color_change',
+        name: '改色道具',
+        type: 'special',
+        description: '将图形的所有颜色，改为蓝色',
+        icon: '🎨'
+    },
+    TRIPLE_COMBO: {
+        id: 'triple_combo',
+        name: '三部曲',
+        type: 'special',
+        description: '接下来三步，获得的分数随机倍率',
+        icon: '🎯'
+    },
+    SWAP: {
+        id: 'swap',
+        name: '交换道具',
+        type: 'special',
+        description: '可以任意交换两个方块',
+        icon: '🔄'
+    }
+};
+
 // 消消乐游戏主逻辑
 class Match3Game {
     constructor() {
@@ -11,6 +59,23 @@ class Match3Game {
         this.boardEl = document.getElementById('game-board');
         this.scoreEl = document.getElementById('score');
         this.movesEl = document.getElementById('moves');
+        this.originalClickHandler = null;
+
+        // 道具系统
+        this.items = {
+            [ITEM_TYPES.MAGNIFYING_GLASS.id]: 1,
+            [ITEM_TYPES.BOMB.id]: 1,
+            [ITEM_TYPES.REFRESH.id]: 1,
+            [ITEM_TYPES.COLOR_CHANGE.id]: 0,
+            [ITEM_TYPES.TRIPLE_COMBO.id]: 0,
+            [ITEM_TYPES.SWAP.id]: 0
+        };
+        this.itemsEl = document.getElementById('items');
+        this.itemButtons = {};
+        this.tripleComboActive = false;
+        this.tripleComboCount = 0;
+        this.swapModeActive = false;
+        this.firstSwapCell = null;
 
         // 形状配置
         this.shapes = ['triangle', 'square', 'circle', 'star'];
@@ -87,6 +152,7 @@ class Match3Game {
         this.createBoard();
         this.renderBoard();
         this.setupEventListeners();
+        this.updateItemsDisplay();
     }
 
     createBoard() {
@@ -248,20 +314,21 @@ class Match3Game {
     }
 
     setupEventListeners() {
-        this.boardEl.addEventListener('click', (e) => {
-            if (this.isAnimating) return;
-
-            const cell = e.target.closest('.cell');
-            if (!cell) return;
-
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-
-            this.handleCellClick(row, col);
-        });
+        this.originalClickHandler = (e) => {
+            this.handleCellClick(e);
+        };
+        this.boardEl.addEventListener('click', this.originalClickHandler);
     }
 
-    handleCellClick(row, col) {
+    handleCellClick(e) {
+        if (this.isAnimating) return;
+
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+
         if (this.selectedCell === null) {
             // 选择第一个格子
             this.selectedCell = { row, col };
@@ -723,8 +790,30 @@ class Match3Game {
     }
 
     addScore(points) {
+        // 检查三部曲倍率
+        if (this.tripleComboActive) {
+            const multipliers = [0.1, 0.5, 0.8, 1, 1.5, 2, 3];
+            const multiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
+            points = Math.ceil(points * multiplier);
+            this.tripleComboCount++;
+            this.showMatchEffect(`三部曲 x${multiplier.toFixed(1)} = ${points}分`);
+
+            if (this.tripleComboCount >= 3) {
+                this.tripleComboActive = false;
+                this.tripleComboCount = 0;
+            }
+        }
+
         this.score += points;
         this.updateScore();
+
+        // 检查是否获得道具（每100分）
+        const previousHundreds = Math.floor((this.score - points) / 100);
+        const currentHundreds = Math.floor(this.score / 100);
+
+        if (currentHundreds > previousHundreds) {
+            this.giveRandomItem();
+        }
     }
 
     updateScore() {
@@ -772,11 +861,26 @@ class Match3Game {
         this.selectedCell = null;
         this.isAnimating = false;
         this.comboCount = 0;
+        this.tripleComboActive = false;
+        this.tripleComboCount = 0;
+        this.swapModeActive = false;
+        this.firstSwapCell = null;
+
+        // 重置道具（普通道具重置为1，特殊道具重置为0）
+        this.items = {
+            [ITEM_TYPES.MAGNIFYING_GLASS.id]: 1,
+            [ITEM_TYPES.BOMB.id]: 1,
+            [ITEM_TYPES.REFRESH.id]: 1,
+            [ITEM_TYPES.COLOR_CHANGE.id]: 0,
+            [ITEM_TYPES.TRIPLE_COMBO.id]: 0,
+            [ITEM_TYPES.SWAP.id]: 0
+        };
 
         this.updateScore();
         this.updateMoves();
         this.createBoard();
         this.renderBoard();
+        this.updateItemsDisplay();
 
         document.getElementById('game-over').classList.remove('active');
     }
@@ -795,6 +899,370 @@ class Match3Game {
         const topRankings = rankings.slice(0, 10);
 
         localStorage.setItem('match3_rankings', JSON.stringify(topRankings));
+    }
+
+    // 道具系统相关方法
+    giveRandomItem() {
+        const rand = Math.random();
+
+        if (rand < 0.8) {
+            // 80%概率获得普通道具
+            const normalItems = [
+                ITEM_TYPES.MAGNIFYING_GLASS,
+                ITEM_TYPES.BOMB,
+                ITEM_TYPES.REFRESH
+            ];
+            const item = normalItems[Math.floor(Math.random() * normalItems.length)];
+            this.items[item.id]++;
+            this.showItemGain(item);
+        } else {
+            // 20%概率获得特殊道具
+            const specialItems = [
+                ITEM_TYPES.COLOR_CHANGE,
+                ITEM_TYPES.TRIPLE_COMBO,
+                ITEM_TYPES.SWAP
+            ];
+            const item = specialItems[Math.floor(Math.random() * specialItems.length)];
+            this.items[item.id]++;
+            this.showItemGain(item);
+        }
+
+        this.updateItemsDisplay();
+    }
+
+    showItemGain(item) {
+        const message = `获得道具: ${item.icon} ${item.name}!`;
+        const comboDisplay = document.getElementById('combo-display');
+        comboDisplay.textContent = message;
+        comboDisplay.classList.add('show');
+        comboDisplay.style.color = '#ffd700';
+        comboDisplay.style.fontSize = '32px';
+
+        setTimeout(() => {
+            comboDisplay.classList.remove('show');
+        }, 1500);
+    }
+
+    updateItemsDisplay() {
+        if (!this.itemsEl) return;
+
+        this.itemsEl.innerHTML = '';
+
+        Object.entries(ITEM_TYPES).forEach(([key, item]) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            itemDiv.innerHTML = `
+                <div class="item-icon">${item.icon}</div>
+                <div class="item-name">${item.name}</div>
+                <div class="item-count">${this.items[item.id]}</div>
+            `;
+
+            const button = document.createElement('button');
+            button.textContent = '使用';
+            button.onclick = () => this.useItem(item.id);
+            button.disabled = this.items[item.id] <= 0;
+
+            if (this.items[item.id] > 0) {
+                itemDiv.appendChild(button);
+            }
+
+            this.itemsEl.appendChild(itemDiv);
+            this.itemButtons[item.id] = button;
+        });
+    }
+
+    useItem(itemId) {
+        if (this.items[itemId] <= 0) return;
+
+        switch (itemId) {
+            case ITEM_TYPES.MAGNIFYING_GLASS.id:
+                this.useMagnifyingGlass();
+                break;
+            case ITEM_TYPES.BOMB.id:
+                this.useBomb();
+                break;
+            case ITEM_TYPES.REFRESH.id:
+                this.useRefresh();
+                break;
+            case ITEM_TYPES.COLOR_CHANGE.id:
+                this.useColorChange();
+                break;
+            case ITEM_TYPES.TRIPLE_COMBO.id:
+                this.useTripleCombo();
+                break;
+            case ITEM_TYPES.SWAP.id:
+                this.useSwap();
+                break;
+        }
+    }
+
+    useMagnifyingGlass() {
+        // 找到所有可以消除的方块
+        const possibleMatches = this.findAllPossibleMatches();
+
+        if (possibleMatches.length === 0) {
+            this.showMatchEffect('没有可消除的方块！');
+            return;
+        }
+
+        // 随机选择3个，如果不足则全部选择
+        const selected = possibleMatches
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3);
+
+        // 高亮显示选中的方块
+        selected.forEach(({ row, col }) => {
+            const index = row * this.boardSize + col;
+            const cell = this.boardEl.children[index];
+            if (cell) {
+                cell.classList.add('highlighted');
+                setTimeout(() => cell.classList.remove('highlighted'), 2000);
+            }
+        });
+
+        this.items[ITEM_TYPES.MAGNIFYING_GLASS.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('找到' + selected.length + '个可消除的方块！');
+    }
+
+    useBomb() {
+        // 获取所有可能的3x3区域中心点
+        const centers = [];
+        for (let row = 1; row < this.boardSize - 1; row++) {
+            for (let col = 1; col < this.boardSize - 1; col++) {
+                centers.push({ row, col });
+            }
+        }
+
+        if (centers.length === 0) {
+            this.showMatchEffect('无法使用炸弹！');
+            return;
+        }
+
+        // 随机选择一个中心点
+        const center = centers[Math.floor(Math.random() * centers.length)];
+
+        // 炸毁3x3区域
+        const destroyed = [];
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                const row = center.row + dr;
+                const col = center.col + dc;
+                if (this.board[row][col]) {
+                    this.board[row][col] = null;
+                    destroyed.push({ row, col });
+                }
+            }
+        }
+
+        // 播放爆炸动画
+        destroyed.forEach(({ row, col }) => {
+            const index = row * this.boardSize + col;
+            const cell = this.boardEl.children[index];
+            if (cell) {
+                cell.classList.add('exploded');
+                setTimeout(() => cell.classList.remove('exploded'), 500);
+            }
+        });
+
+        // 下落填充
+        setTimeout(async () => {
+            await this.dropPieces();
+            await this.fillBoard();
+            this.processMatches();
+        }, 300);
+
+        this.items[ITEM_TYPES.BOMB.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('爆炸！消除了' + destroyed.length + '个方块！');
+    }
+
+    useRefresh() {
+        // 刷新所有方块
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                this.board[row][col] = this.getRandomPiece();
+            }
+        }
+
+        this.renderBoard();
+        this.items[ITEM_TYPES.REFRESH.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('棋盘已刷新！');
+    }
+
+    useColorChange() {
+        // 将所有方块改为蓝色
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (this.board[row][col]) {
+                    this.board[row][col].color = 'blue';
+                }
+            }
+        }
+
+        this.renderBoard();
+        this.items[ITEM_TYPES.COLOR_CHANGE.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('所有方块已变为蓝色！');
+    }
+
+    useTripleCombo() {
+        this.tripleComboActive = true;
+        this.tripleComboCount = 0;
+        this.items[ITEM_TYPES.TRIPLE_COMBO.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('三部曲激活！接下来三步随机倍率！');
+    }
+
+    useSwap() {
+        this.swapModeActive = true;
+        this.selectedCell = null;
+        this.items[ITEM_TYPES.SWAP.id]--;
+        this.updateItemsDisplay();
+        this.showMatchEffect('交换模式：点击两个方块进行交换');
+
+        // 更新事件监听器
+        this.setupSwapEventListeners();
+    }
+
+    setupSwapEventListeners() {
+        // 临时移除原始事件监听器，使用自定义逻辑
+        this.boardEl.removeEventListener('click', this.originalClickHandler);
+
+        this.boardEl.onclick = (e) => {
+            // 如果不是交换模式，恢复原始逻辑
+            if (!this.swapModeActive) {
+                if (this.originalClickHandler) {
+                    this.originalClickHandler(e);
+                }
+                return;
+            }
+
+            if (this.isAnimating) return;
+
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (this.firstSwapCell === null) {
+                // 选择第一个方块
+                this.firstSwapCell = { row, col };
+                this.highlightCell(row, col);
+                this.showMatchEffect('已选择第一个方块，请选择第二个');
+            } else {
+                // 选择第二个方块
+                const { row: firstRow, col: firstCol } = this.firstSwapCell;
+
+                // 检查是否是同一个方块
+                if (firstRow === row && firstCol === col) {
+                    this.clearSelection();
+                    this.firstSwapCell = null;
+                    this.showMatchEffect('取消选择');
+                    return;
+                }
+
+                // 交换两个方块
+                this.swapPiecesWithoutCheck(firstRow, firstCol, row, col);
+
+                this.clearSelection();
+                this.firstSwapCell = null;
+                this.swapModeActive = false;
+
+                // 恢复原始事件监听器
+                this.boardEl.removeEventListener('click', this.boardEl.onclick);
+                this.boardEl.addEventListener('click', this.originalClickHandler);
+            }
+        };
+    }
+
+    swapPiecesWithoutCheck(row1, col1, row2, col2) {
+        this.isAnimating = true;
+
+        // 交换
+        const temp = this.board[row1][col1];
+        this.board[row1][col1] = this.board[row2][col2];
+        this.board[row2][col2] = temp;
+
+        this.renderBoard();
+
+        // 检查是否有匹配
+        const matches = this.findMatches();
+
+        if (matches.length > 0) {
+            this.moves--;
+            this.updateMoves();
+            this.comboCount = 0;
+            this.processMatches().then(() => {
+                this.isAnimating = false;
+            });
+        } else {
+            // 没有匹配，换回来
+            setTimeout(() => {
+                const temp = this.board[row1][col1];
+                this.board[row1][col1] = this.board[row2][col2];
+                this.board[row2][col2] = temp;
+                this.renderBoard();
+                this.isAnimating = false;
+                this.showMatchEffect('交换后没有可消除的方块！');
+            }, 300);
+        }
+    }
+
+    findAllPossibleMatches() {
+        const matches = [];
+
+        // 检查所有可能的交换
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                // 尝试向右交换
+                if (col < this.boardSize - 1) {
+                    const temp = this.board[row][col];
+                    this.board[row][col] = this.board[row][col + 1];
+                    this.board[row][col + 1] = temp;
+
+                    if (this.findMatches().length > 0) {
+                        matches.push({ row, col });
+                        matches.push({ row, col: col + 1 });
+                    }
+
+                    // 换回来
+                    this.board[row][col + 1] = this.board[row][col];
+                    this.board[row][col] = temp;
+                }
+
+                // 尝试向下交换
+                if (row < this.boardSize - 1) {
+                    const temp = this.board[row][col];
+                    this.board[row][col] = this.board[row + 1][col];
+                    this.board[row + 1][col] = temp;
+
+                    if (this.findMatches().length > 0) {
+                        matches.push({ row, col });
+                        matches.push({ row: row + 1, col });
+                    }
+
+                    // 换回来
+                    this.board[row + 1][col] = this.board[row][col];
+                    this.board[row][col] = temp;
+                }
+            }
+        }
+
+        // 去重
+        const uniqueMatches = [];
+        const seen = new Set();
+        for (const match of matches) {
+            const key = `${match.row},${match.col}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueMatches.push(match);
+            }
+        }
+
+        return uniqueMatches;
     }
 
     getRankings() {
@@ -922,6 +1390,60 @@ class Match3Game {
                     <td>×3</td>
                 </tr>
             </table>
+
+            <h3>道具系统</h3>
+            <p>每局游戏开始时，每个普通道具拥有1个，特殊道具初始为0。每当分数超过100分（100、200、300...）时，会随机获得一个道具。</p>
+
+            <h4>普通道具</h4>
+            <table class="rules-table">
+                <tr>
+                    <th>道具</th>
+                    <th>效果</th>
+                    <th>概率</th>
+                </tr>
+                <tr>
+                    <td>🔍 放大镜</td>
+                    <td>找到随机三个可以消消乐的方块</td>
+                    <td>80%/3</td>
+                </tr>
+                <tr>
+                    <td>💣 炸弹</td>
+                    <td>炸除3×3的方块</td>
+                    <td>80%/3</td>
+                </tr>
+                <tr>
+                    <td>🔄 刷新</td>
+                    <td>刷新游戏场地的所有方块</td>
+                    <td>80%/3</td>
+                </tr>
+            </table>
+
+            <h4>特殊道具</h4>
+            <table class="rules-table">
+                <tr>
+                    <th>道具</th>
+                    <th>效果</th>
+                    <th>概率</th>
+                </tr>
+                <tr>
+                    <td>🎨 改色</td>
+                    <td>将图形的所有颜色，改为蓝色</td>
+                    <td>20%/3</td>
+                </tr>
+                <tr>
+                    <td>🎯 三部曲</td>
+                    <td>接下来三步，获得的分数随机倍率（0.1-3倍）</td>
+                    <td>20%/3</td>
+                </tr>
+                <tr>
+                    <td>🔄 交换</td>
+                    <td>可以任意交换两个方块</td>
+                    <td>20%/3</td>
+                </tr>
+            </table>
+
+            <h4>道具获取</h4>
+            <p>普通道具总概率80%，特殊道具总概率20%。每100分获得一个道具。</p>
         `;
 
         this.showModal('游戏规则', rulesHTML);

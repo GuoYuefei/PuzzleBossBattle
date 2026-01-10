@@ -289,6 +289,80 @@
             animation: combo 0.8s ease-out;
         }
 
+        /* 道具样式 */
+        #items {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .item {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            min-width: 80px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .item:hover {
+            transform: translateY(-2px);
+        }
+
+        .item-icon {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .item-count {
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .item button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .item button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .highlighted {
+            animation: highlight 2s ease-out;
+            box-shadow: 0 0 15px 5px #ffd700 !important;
+        }
+
+        @keyframes highlight {
+            0%, 100% { box-shadow: 0 0 15px 5px #ffd700 !important; }
+            50% { box-shadow: 0 0 25px 10px #ffd700 !important; }
+        }
+
+        .exploded {
+            animation: explode 0.5s ease-out forwards;
+            background: #ff4757 !important;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
         @keyframes combo {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
@@ -371,6 +445,8 @@
     <div class="game-container">
         <div id="game-board"></div>
     </div>
+
+    <div id="items"></div>
 
     <div class="controls">
         <button onclick="game.showRanking()">排行榜</button>

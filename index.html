@@ -646,7 +646,14 @@
         <div class="game-over-content">
             <h2>游戏结束</h2>
             <p>最终分数: <span id="final-score">0</span></p>
-            <button onclick="game.restart()" style="margin-top: 15px;">再来一局</button>
+            <div style="margin-top: 15px;">
+                <input type="text" id="player-name" placeholder="输入你的名字（选填）" maxlength="10"
+                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 200px; font-size: 14px;">
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="game.saveAndRestart()">保存并再来一局</button>
+                <button onclick="game.restart()" style="background: #ccc; margin-left: 10px;">不保存直接再来</button>
+            </div>
         </div>
     </div>
 

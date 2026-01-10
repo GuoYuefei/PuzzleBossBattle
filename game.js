@@ -965,7 +965,6 @@ class Match3Game {
     }
 
     endGame() {
-        this.saveScore();
         document.getElementById('final-score').textContent = this.score;
         document.getElementById('game-over').classList.add('active');
     }
@@ -997,16 +996,35 @@ class Match3Game {
         this.renderBoard();
         this.updateItemsDisplay();
 
+        // 清空日志
+        if (this.logContent) {
+            this.logContent.innerHTML = '';
+            this.gameLog = [];
+            this.addLog('系统', '游戏开始！普通道具各1个，每100分获得随机奖励', 'system');
+        }
+
         document.getElementById('game-over').classList.remove('active');
     }
 
-    saveScore() {
+    saveAndRestart() {
+        const nameInput = document.getElementById('player-name');
+        const playerName = nameInput ? nameInput.value.trim() : '';
+        this.saveScore(playerName);
+        nameInput.value = ''; // 清空输入框
+        this.restart();
+    }
+
+    saveScore(playerName = '') {
         const rankings = this.getRankings();
-        const date = new Date().toLocaleDateString('zh-CN');
+        const now = new Date();
+        const date = now.toLocaleDateString('zh-CN');
+        const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
         rankings.push({
             score: this.score,
-            date: date
+            date: date,
+            time: time,
+            name: playerName || '【无名之辈】'
         });
 
         // 排序并保留前10名
@@ -1020,37 +1038,66 @@ class Match3Game {
     giveRandomItem() {
         const rand = Math.random();
         const scoreMilestone = Math.floor(this.score / 100) * 100;
-        let item;
 
-        if (rand < 0.8) {
-            // 80%概率获得普通道具
+        if (rand < 0.75) {
+            // 75%概率获得普通道具
             const normalItems = [
                 ITEM_TYPES.MAGNIFYING_GLASS,
                 ITEM_TYPES.BOMB,
                 ITEM_TYPES.REFRESH
             ];
-            item = normalItems[Math.floor(Math.random() * normalItems.length)];
+            const item = normalItems[Math.floor(Math.random() * normalItems.length)];
+            this.items[item.id]++;
+            this.showItemGain(item);
+            this.addLog('道具获得',
+                `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
+                'item');
+        } else if (rand < 0.90) {
+            // 15%概率获得特殊道具（0.75-0.90）
+            const specialItems = [
+                ITEM_TYPES.COLOR_CHANGE,
+                ITEM_TYPES.TRIPLE_COMBO,
+                ITEM_TYPES.SWAP
+            ];
+            const item = specialItems[Math.floor(Math.random() * specialItems.length)];
             this.items[item.id]++;
             this.showItemGain(item);
             this.addLog('道具获得',
                 `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
                 'item');
         } else {
-            // 20%概率获得特殊道具
-            const specialItems = [
-                ITEM_TYPES.COLOR_CHANGE,
-                ITEM_TYPES.TRIPLE_COMBO,
-                ITEM_TYPES.SWAP
-            ];
-            item = specialItems[Math.floor(Math.random() * specialItems.length)];
-            this.items[item.id]++;
-            this.showItemGain(item);
-            this.addLog('道具获得',
-                `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
-                'item');
+            // 10%概率获得步数奖励（0.90-1.00）
+            this.giveMovesBonus(scoreMilestone);
         }
 
         this.updateItemsDisplay();
+    }
+
+    giveMovesBonus(scoreMilestone) {
+        const rand = Math.random();
+        let moves = 0;
+        let percentage = '';
+
+        if (rand < 0.2) {
+            // 10%中的2%：+3步
+            moves = 3;
+            percentage = '2%';
+        } else if (rand < 0.5) {
+            // 10%中的3%：+2步
+            moves = 2;
+            percentage = '3%';
+        } else {
+            // 10%中的5%：+1步
+            moves = 1;
+            percentage = '5%';
+        }
+
+        this.moves += moves;
+        this.updateMoves();
+        this.showMatchEffect(`获得步数奖励：+${moves}步！`);
+        this.addLog('步数奖励',
+            `达到${scoreMilestone}分！幸运触发（${percentage}）获得 +${moves}步（当前${this.moves}步）`,
+            'item');
     }
 
     showItemGain(item) {
@@ -1446,9 +1493,11 @@ class Match3Game {
             rankings.forEach((item, index) => {
                 const li = document.createElement('li');
                 li.className = 'ranking-item';
+                const timeStr = item.time ? ` ${item.time}` : '';
                 li.innerHTML = `
-                    <span>${index + 1}. ${item.date}</span>
+                    <span>${index + 1}. ${item.name}</span>
                     <span>${item.score}分</span>
+                    <span style="font-size: 11px; color: #999;">${item.date}${timeStr}</span>
                 `;
                 rankingsList.appendChild(li);
             });
@@ -1554,9 +1603,9 @@ class Match3Game {
             </table>
 
             <h3>道具系统</h3>
-            <p>每局游戏开始时，每个普通道具拥有1个，特殊道具初始为0。每当分数超过100分（100、200、300...）时，会随机获得一个道具。</p>
+            <p>每局游戏开始时，每个普通道具拥有1个，特殊道具初始为0。每当分数超过100分（100、200、300...）时，会随机获得奖励。</p>
 
-            <h4>普通道具</h4>
+            <h4>普通道具（总概率75%）</h4>
             <table class="rules-table">
                 <tr>
                     <th>道具</th>
@@ -1566,21 +1615,21 @@ class Match3Game {
                 <tr>
                     <td>🔍 放大镜</td>
                     <td>找到随机三个可以消消乐的方块</td>
-                    <td>80%/3</td>
+                    <td>75%/3</td>
                 </tr>
                 <tr>
                     <td>💣 炸弹</td>
                     <td>炸除3×3的方块</td>
-                    <td>80%/3</td>
+                    <td>75%/3</td>
                 </tr>
                 <tr>
                     <td>🔄 刷新</td>
                     <td>刷新游戏场地的所有方块</td>
-                    <td>80%/3</td>
+                    <td>75%/3</td>
                 </tr>
             </table>
 
-            <h4>特殊道具</h4>
+            <h4>特殊道具（总概率15%）</h4>
             <table class="rules-table">
                 <tr>
                     <th>道具</th>
@@ -1590,22 +1639,43 @@ class Match3Game {
                 <tr>
                     <td>🎨 改色</td>
                     <td>将图形的所有颜色，改为蓝色</td>
-                    <td>20%/3</td>
+                    <td>15%/3</td>
                 </tr>
                 <tr>
                     <td>🎯 三部曲</td>
                     <td>接下来三步，获得的分数随机倍率（0.1-3倍）</td>
-                    <td>20%/3</td>
+                    <td>15%/3</td>
                 </tr>
                 <tr>
                     <td>🔄 交换</td>
                     <td>可以任意交换两个方块</td>
-                    <td>20%/3</td>
+                    <td>15%/3</td>
                 </tr>
             </table>
 
-            <h4>道具获取</h4>
-            <p>普通道具总概率80%，特殊道具总概率20%。每100分获得一个道具。</p>
+            <h4>步数奖励（总概率10%）</h4>
+            <table class="rules-table">
+                <tr>
+                    <th>奖励</th>
+                    <th>效果</th>
+                    <th>概率</th>
+                </tr>
+                <tr>
+                    <td>+3步</td>
+                    <td>增加3步游戏步数</td>
+                    <td>2%</td>
+                </tr>
+                <tr>
+                    <td>+2步</td>
+                    <td>增加2步游戏步数</td>
+                    <td>3%</td>
+                </tr>
+                <tr>
+                    <td>+1步</td>
+                    <td>增加1步游戏步数</td>
+                    <td>5%</td>
+                </tr>
+            </table>
         `;
 
         this.showModal('游戏规则', rulesHTML);
@@ -1651,7 +1721,7 @@ class Match3Game {
         `;
 
         if (formula) {
-            html += `<div class="log-formula">公式: ${formula} = ${this.evaluateFormula(formula)}</div>`;
+            html += `<div class="log-formula">公式: ${formula}</div>`;
         }
 
         logEntry.innerHTML = html;
@@ -1662,16 +1732,6 @@ class Match3Game {
 
         // 保存到日志数组
         this.gameLog.push({ title, message, type, formula, time: timeStr });
-    }
-
-    evaluateFormula(formula) {
-        try {
-            // 替换中文符号并计算
-            let expr = formula.replace(/×/g, '*').replace(/（.*?）/g, '');
-            return eval(expr);
-        } catch (e) {
-            return formula;
-        }
     }
 
     toggleLog() {

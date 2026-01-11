@@ -5,7 +5,7 @@ class BossSystem {
 
         // Boss战相关属性
         this.bossLevel = 1;
-        this.bossMaxLevel = 70;
+        this.bossMaxLevel = BOSS_MAX_LEVEL;
         this.boss = null;
         this.playerHp = 100;
         this.playerMaxHp = 100;
@@ -40,8 +40,8 @@ class BossSystem {
             skillRate: skillRate
         };
 
-        // 玩家血量为Boss的10%，每关回满
-        this.playerMaxHp = Math.ceil(bossHp * 0.1);
+        // 玩家血量为Boss的一定比例，每关回满
+        this.playerMaxHp = Math.ceil(bossHp * PLAYER_HP_RATIO);
         this.playerHp = this.playerMaxHp;
         this.bossSkillSealed = 0;
 
@@ -51,11 +51,9 @@ class BossSystem {
         this.monsterCells.clear();
         this.bombCells.clear();
 
-        // 计算Boss战步数：初始50步 + (每关+10步) + (整十关额外+30步)
+        // 计算Boss战步数：使用常量配置
         // 例如：第1关=50步，第10关=50+90+30=170步，第70关=50+690+210=950步
-        const baseSteps = 50;
-        const stepsPerLevel = 10;
-        const bonusForTenthLevels = 30;
+        const { baseSteps, stepsPerLevel, bonusForTenthLevels } = BOSS_MOVES_CONFIG;
 
         // 计算到当前关卡的总步数
         // 已击败的boss数量 = 当前关卡 - 1
@@ -74,34 +72,16 @@ class BossSystem {
     getBossSkillRate() {
         const level = this.bossLevel;
 
-        // 1-9关：10%
-        if (level <= 9) return 0.1;
-        // 10关：30%
-        if (level === 10) return 0.3;
-        // 11-19关：20%
-        if (level <= 19) return 0.2;
-        // 20关：40%
-        if (level === 20) return 0.4;
-        // 21-29关：30%
-        if (level <= 29) return 0.3;
-        // 30关：50%
-        if (level === 30) return 0.5;
-        // 31-39关：40%
-        if (level <= 39) return 0.4;
-        // 40关：60%
-        if (level === 40) return 0.6;
-        // 41-49关：50%
-        if (level <= 49) return 0.5;
-        // 50关：70%
-        if (level === 50) return 0.7;
-        // 51-59关：60%
-        if (level <= 59) return 0.6;
-        // 60关：80%
-        if (level === 60) return 0.8;
-        // 61-69关：70%
-        if (level <= 69) return 0.7;
-        // 70关：90%
-        return 0.9;
+        // 使用常量配置查找对应的技能触发率
+        // 按关卡范围查找：从当前关卡开始向下查找最近的配置
+        for (let i = level; i >= 1; i--) {
+            if (BOSS_SKILL_RATES[i] !== undefined) {
+                return BOSS_SKILL_RATES[i];
+            }
+        }
+
+        // 默认返回10%
+        return 0.1;
     }
 
     // Boss触发技能

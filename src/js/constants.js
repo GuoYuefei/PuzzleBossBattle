@@ -163,3 +163,84 @@ const COLOR_PROGRESSION = ['green', 'blue', 'red'];
 
 // Boss头像列表
 const BOSS_AVATARS = ['👹', '👺', '🤡', '👿', '💀', '👻', '👽', '🤖', '🎃', '😈'];
+
+// ========== 游戏概率配置 ==========
+
+// 形状概率配置
+const SHAPE_PROBABILITIES = {
+    'star': 0.1,      // 五角星10%
+    'triangle': 0.3,  // 三角形30%
+    'square': 0.3,    // 正方形30%
+    'circle': 0.3     // 圆形30%
+};
+
+// 颜色概率配置
+const COLOR_PROBABILITIES = {
+    'red': 0.2,       // 红色20%
+    'blue': 0.5,      // 蓝色50%
+    'green': 0.3      // 绿色30%
+};
+
+// ========== Boss战配置 ==========
+
+// Boss战步数计算配置
+const BOSS_MOVES_CONFIG = {
+    baseSteps: 50,           // 基础步数
+    stepsPerLevel: 5,       // 每关增加步数
+    bonusForTenthLevels: 20  // 整十关额外奖励步数
+};
+
+// Boss技能触发率配置（按关卡）
+const BOSS_SKILL_RATES = {
+    1: 0.1,   // 1-9关：10%
+    10: 0.3,  // 10关：30%
+    11: 0.2,  // 11-19关：20%
+    20: 0.4,  // 20关：40%
+    21: 0.3,  // 21-29关：30%
+    30: 0.5,  // 30关：50%
+    31: 0.4,  // 31-39关：40%
+    40: 0.6,  // 40关：60%
+    41: 0.5,  // 41-49关：50%
+    50: 0.7,  // 50关：70%
+    51: 0.6,  // 51-59关：60%
+    60: 0.8,  // 60关：80%
+    61: 0.7,  // 61-69关：70%
+    70: 0.9   // 70关：90%
+};
+
+// ========== 道具系统配置 ==========
+
+// 道具获得概率
+const ITEM_PROBABILITIES = {
+    normal: 0.75,    // 普通道具75%
+    special: 0.15,   // 特殊道具15%（0.75-0.90）
+    movesBonus: 0.10 // 步数奖励10%（0.90-1.00）
+};
+
+// 步数奖励概率（在10%的步数奖励中细分）
+const MOVES_BONUS_PROBABILITIES = {
+    threeSteps: 0.2,  // 10%中的2%：+3步
+    twoSteps: 0.3,    // 10%中的3%：+2步
+    oneStep: 0.5      // 10%中的5%：+1步
+};
+
+// 步数奖励值
+const MOVES_BONUS_VALUES = {
+    threeSteps: 3,
+    twoSteps: 2,
+    oneStep: 1
+};
+
+// ========== 游戏通用配置 ==========
+
+// 棋盘大小
+const BOARD_SIZE = 11;
+
+// 经典模式初始步数
+const CLASSIC_MOVES = 30;
+
+// Boss战最大关卡数
+const BOSS_MAX_LEVEL = 70;
+
+// 玩家血量比例（相对于Boss血量）
+const PLAYER_HP_RATIO = 0.1;

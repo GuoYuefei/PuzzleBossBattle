@@ -8,27 +8,16 @@ class GameLogic {
     calculateProbabilities() {
         const probs = {};
 
-        // 调整概率：增加红色出现概率
+        // 使用常量中的概率配置
         for (const shape of SHAPES) {
             for (const color of COLORS) {
-                let prob = 1;
+                // 获取形状概率
+                const shapeProb = SHAPE_PROBABILITIES[shape] || 0;
+                // 获取颜色概率
+                const colorProb = COLOR_PROBABILITIES[color] || 0;
 
-                // 形状概率：五角星10%，其他均匀分配
-                if (shape === 'star') {
-                    prob *= 0.1;
-                } else {
-                    prob *= 0.3; // (1 - 0.1) / 3
-                }
-
-                // 颜色概率：红色20%，蓝色40%，绿色40%
-                if (color === 'red') {
-                    prob *= 0.2;  // 从5%提升到20%
-                } else if (color === 'blue') {
-                    prob *= 0.4;
-                } else {
-                    prob *= 0.4;
-                }
-
+                // 计算组合概率
+                const prob = shapeProb * colorProb;
                 const key = `${shape}-${color}`;
                 probs[key] = prob;
             }

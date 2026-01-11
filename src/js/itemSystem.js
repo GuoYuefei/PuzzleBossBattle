@@ -398,8 +398,8 @@ class ItemSystem {
         const rand = Math.random();
         const scoreMilestone = Math.floor(this.game.score / 100) * 100;
 
-        if (rand < 0.75) {
-            // 75%概率获得普通道具
+        if (rand < ITEM_PROBABILITIES.normal) {
+            // 普通道具概率
             const normalItems = [
                 ITEM_TYPES.MAGNIFYING_GLASS,
                 ITEM_TYPES.BOMB,
@@ -411,8 +411,8 @@ class ItemSystem {
             this.game.logSystem.addLog('道具获得',
                 `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
                 'item');
-        } else if (rand < 0.90) {
-            // 15%概率获得特殊道具（0.75-0.90）
+        } else if (rand < ITEM_PROBABILITIES.normal + ITEM_PROBABILITIES.special) {
+            // 特殊道具概率
             const specialItems = [
                 ITEM_TYPES.COLOR_CHANGE,
                 ITEM_TYPES.TRIPLE_COMBO,
@@ -425,7 +425,7 @@ class ItemSystem {
                 `达到${scoreMilestone}分！获得 ${item.icon} ${item.name}（${item.description}）`,
                 'item');
         } else {
-            // 10%概率获得步数奖励（0.90-1.00）
+            // 步数奖励概率
             this.giveMovesBonus(scoreMilestone);
         }
 
@@ -438,22 +438,22 @@ class ItemSystem {
         let moves = 0;
         let percentage = '';
 
-        if (rand < 0.2) {
-            // 10%中的2%：+3步
-            moves = 3;
+        if (rand < MOVES_BONUS_PROBABILITIES.threeSteps) {
+            // +3步
+            moves = MOVES_BONUS_VALUES.threeSteps;
             percentage = '2%';
-        } else if (rand < 0.5) {
-            // 10%中的3%：+2步
-            moves = 2;
+        } else if (rand < MOVES_BONUS_PROBABILITIES.threeSteps + MOVES_BONUS_PROBABILITIES.twoSteps) {
+            // +2步
+            moves = MOVES_BONUS_VALUES.twoSteps;
             percentage = '3%';
         } else {
-            // 10%中的5%：+1步
-            moves = 1;
+            // +1步
+            moves = MOVES_BONUS_VALUES.oneStep;
             percentage = '5%';
         }
 
         this.game.moves += moves;
-        this.game.uiRenderer.updateMoves(this.game.moves, this.game.bossSystem ? this.game.bossSystem.initialMoves : 30, this.game.gameMode);
+        this.game.uiRenderer.updateMoves(this.game.moves, this.game.bossSystem ? this.game.bossSystem.initialMoves : CLASSIC_MOVES, this.game.gameMode);
         this.game.uiRenderer.showMatchEffect(`获得步数奖励：+${moves}步！`);
         this.game.logSystem.addLog('步数奖励',
             `达到${scoreMilestone}分！幸运触发（${percentage}）获得 +${moves}步（当前${this.game.moves}步）`,

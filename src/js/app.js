@@ -2,11 +2,11 @@
 class Match3Game {
     constructor() {
         // 基本配置
-        this.boardSize = 11;
+        this.boardSize = BOARD_SIZE;
         this.board = [];
         this.selectedCell = null;
         this.score = 0;
-        this.moves = 30;
+        this.moves = CLASSIC_MOVES;
         this.isAnimating = false;
         this.comboCount = 0;
 
@@ -198,7 +198,7 @@ class Match3Game {
         }
 
         this.uiRenderer.updateScore(this.score);
-        this.uiRenderer.updateMoves(this.moves, this.bossSystem ? this.bossSystem.initialMoves : 30, this.gameMode);
+        this.uiRenderer.updateMoves(this.moves, this.bossSystem ? this.bossSystem.initialMoves : CLASSIC_MOVES, this.gameMode);
         this.gameLogic.createBoard();
         this.uiRenderer.renderBoard(this);
 

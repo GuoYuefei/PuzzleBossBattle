@@ -234,7 +234,7 @@ class ItemSystem {
         this.items[ITEM_TYPES.TRIPLE_COMBO.id]--;
         this.updateItemsDisplay();
         this.game.uiRenderer.showMatchEffect('三部曲激活！接下来三步随机倍率！');
-        this.game.logSystem.addLog('三部曲', '接下来3步随机倍率（0.1/0.5/0.8/1/1.5/2/3）', 'item');
+        this.game.logSystem.addLog('三部曲', '接下来3步随机倍率（0.5/0.8/1/1.5/2/3/5）', 'item');
     }
 
     // 使用交换道具
@@ -479,7 +479,7 @@ class ItemSystem {
         let actualPoints = points;
 
         if (this.tripleComboActive) {
-            const multipliers = [0.1, 0.5, 0.8, 1, 1.5, 2, 3];
+            const multipliers = [0.5, 0.8, 1, 1.5, 2, 3, 5];
             const tripleMultiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
             const newPoints = Math.ceil(points * tripleMultiplier);
             this.game.logSystem.addLog('三部曲',

@@ -357,7 +357,7 @@ class UIRenderer {
             <table class="rules-table">
                 <tr><th>技能</th><th>效果</th><th>概率</th></tr>
                 <tr><td>召唤小怪</td><td>生成需多次消除的小怪块</td><td>3%</td></tr>
-                <tr><td>护盾生成</td><td>Boss获得护盾</td><td>7%</td></tr>
+                <tr><td>护盾生成</td><td>Boss获得护盾</td><td>4%</td></tr>
                 <tr><td>元素转换</td><td>将40%的图形随机转换成其他形状</td><td>1%</td></tr>
             </table>
 
@@ -504,7 +504,7 @@ class UIRenderer {
                 </tr>
                 <tr>
                     <td>🎯 三部曲</td>
-                    <td>接下来三步，获得的分数随机倍率（0.1-3倍）</td>
+                    <td>接下来三步，获得的分数随机倍率（0.5-5倍）</td>
                     <td>15%/3</td>
                 </tr>
                 <tr>

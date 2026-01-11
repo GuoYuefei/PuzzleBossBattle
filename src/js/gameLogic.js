@@ -490,6 +490,35 @@ class GameLogic {
             await this.game.bossSystem.playerAttackBoss(actualDamage, totalGreenCount, totalRedCount, totalMatchCount);
             this.game.uiRenderer.updateBossUI(this.game.bossSystem);
         }
+
+        // 处理步数奖励
+        await this.processMovesBonus();
+    }
+
+    // 处理步数奖励
+    async processMovesBonus() {
+        // 只有在Boss模式下才处理步数奖励
+        if (this.game.gameMode !== 'boss') return;
+
+        // 10%的概率获得步数奖励
+        if (Math.random() < ITEM_PROBABILITIES.movesBonus) {
+            // 根据概率决定奖励多少步
+            let bonusType;
+            const rand = Math.random();
+            if (rand < MOVES_BONUS_PROBABILITIES.threeSteps) {
+                bonusType = 'threeSteps';
+            } else if (rand < MOVES_BONUS_PROBABILITIES.threeSteps + MOVES_BONUS_PROBABILITIES.twoSteps) {
+                bonusType = 'twoSteps';
+            } else {
+                bonusType = 'oneStep';
+            }
+
+            const bonusSteps = MOVES_BONUS_VALUES[bonusType];
+            this.game.moves += bonusSteps;
+            this.game.uiRenderer.updateMoves(this.game.moves, this.game.bossSystem.initialMoves, this.game.gameMode);
+            this.game.uiRenderer.showMatchEffect(`获得步数奖励！+${bonusSteps}步！`);
+            this.game.logSystem.addLog('步数奖励', `获得${bonusSteps}步奖励`, 'item');
+        }
     }
 
     // 计算分数

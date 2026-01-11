@@ -15,6 +15,7 @@ class BossSystem {
         this.monsterCells = new Map(); // 小怪格子 {row_col: hp}
         this.bombCells = new Map(); // 炸弹格子 {row_col: countdown}
         this.initialMoves = 30; // Boss战初始步数（用于显示）
+        this.remainingMovesFromPreviousLevel = 0; // 上一关剩余步数
     }
 
     // 初始化Boss
@@ -51,15 +52,18 @@ class BossSystem {
         this.monsterCells.clear();
         this.bombCells.clear();
 
-        // 计算Boss战步数：每过一关在上一关基础上加5步
-        // 第1关=50步，第2关=55步，第3关=60步...
+        // 计算Boss战步数
         if (this.bossLevel === 1) {
-            this.game.moves = 50; // 第一关固定50步
+            // 第一关固定50步
+            this.game.moves = 50;
+            this.initialMoves = 50;
+            this.remainingMovesFromPreviousLevel = 0; // 第一关没有上一关剩余步数
         } else {
-            // 每过一关增加5步
-            this.game.moves = 50 + (this.bossLevel - 1) * 5;
+            // 基于上一关剩余步数，每过一关加5步
+            const additionalMoves = 5; // 每关增加5步
+            this.game.moves = this.remainingMovesFromPreviousLevel + additionalMoves;
+            this.initialMoves = 50; // 显示始终显示基础50步
         }
-        this.initialMoves = 50; // 显示始终显示基础50步
 
         // 更新Boss UI
         this.game.uiRenderer.updateBossUI(this);
@@ -367,6 +371,9 @@ class BossSystem {
     // Boss被击败
     async bossDefeated() {
         this.game.uiRenderer.showMatchEffect('Boss被击败！');
+
+        // 保存上一关的剩余步数
+        this.remainingMovesFromPreviousLevel = this.game.moves;
 
         // 保存最高关卡
         this.saveMaxLevel();

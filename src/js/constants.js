@@ -88,11 +88,11 @@ const BOSS_SKILLS = {
         description: '为Boss施加护盾',
         probability: 0.04
     },
-    SEAL: {
-        id: 'seal',
-        name: '元素封印',
+    TRANSFORM: {
+        id: 'transform',
+        name: '元素转换',
         type: 'target_interference',
-        description: '禁止玩家消除某种颜色的棋子若干回合',
+        description: '将40%的图形随机转换成其他形状',
         probability: 0.01
     },
     // 直接攻击

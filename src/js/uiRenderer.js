@@ -37,11 +37,6 @@ class UIRenderer {
                     cell.dataset.countdown = game.bossSystem.bombCells.get(cellKey);
                 }
 
-                // 处理颜色封印
-                if (piece && game.bossSystem && game.bossSystem.sealedColor && piece.color === game.bossSystem.sealedColor) {
-                    cell.classList.add('sealed-color');
-                }
-
                 if (piece) {
                     const pieceEl = this.createPieceElement(piece);
                     cell.appendChild(pieceEl);
@@ -226,16 +221,6 @@ class UIRenderer {
             sealIndicator.classList.remove('active');
             bossAvatar.classList.remove('sealed');
         }
-
-        // 更新颜色封印状态
-        const colorSealIndicator = document.getElementById('color-seal-indicator');
-        if (bossSystem.sealedColor && bossSystem.sealedColorTurns > 0) {
-            colorSealIndicator.classList.add('active');
-            document.getElementById('color-seal-text').textContent = COLOR_NAMES[bossSystem.sealedColor];
-            document.getElementById('color-seal-remaining').textContent = bossSystem.sealedColorTurns;
-        } else {
-            colorSealIndicator.classList.remove('active');
-        }
     }
 
     // 更新有变化的格子，避免全盘刷新
@@ -373,7 +358,7 @@ class UIRenderer {
                 <tr><th>技能</th><th>效果</th><th>概率</th></tr>
                 <tr><td>召唤小怪</td><td>生成需多次消除的小怪块</td><td>3%</td></tr>
                 <tr><td>护盾生成</td><td>Boss获得护盾</td><td>7%</td></tr>
-                <tr><td>元素封印</td><td>禁止消除某种颜色若干回合</td><td>1%</td></tr>
+                <tr><td>元素转换</td><td>将40%的图形随机转换成其他形状</td><td>1%</td></tr>
             </table>
 
             <h4>直接攻击</h4>

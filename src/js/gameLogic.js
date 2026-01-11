@@ -325,13 +325,11 @@ class GameLogic {
             const matchedCells = new Set();
             const blockedCells = new Set(); // 被阻挡的格子（冻结或小怪未完全消除）
             const skippedMatches = new Set(); // 被跳过的匹配索引（冻结/小怪）
-            const sealedMatches = new Set(); // 被封印颜色的匹配索引（不加分但会消除）
 
-            // 首先检查哪些匹配包含被阻挡的格子或封印颜色
+            // 首先检查哪些匹配包含被阻挡的格子
             for (let i = 0; i < matches.length; i++) {
                 const match = matches[i];
                 let matchBlocked = false;
-                let matchSealed = false;
 
                 for (const cell of match.cells) {
                     const cellKey = `${cell.row},${cell.col}`;
@@ -342,11 +340,6 @@ class GameLogic {
                     if (bossSystem && (bossSystem.frozenCells.has(cellKey) || bossSystem.monsterCells.has(cellKey))) {
                         matchBlocked = true;
                         break;
-                    }
-
-                    // 检查是否被封印颜色
-                    if (piece && bossSystem && bossSystem.sealedColor && piece.color === bossSystem.sealedColor) {
-                        matchSealed = true;
                     }
                 }
 
@@ -382,13 +375,10 @@ class GameLogic {
                             }
                         }
                     }
-                } else if (matchSealed) {
-                    // 这个匹配包含封印颜色，标记为封印匹配（不加分但会消除）
-                    sealedMatches.add(i);
                 }
             }
 
-            // 处理未被阻挡的匹配和封印颜色的匹配
+            // 处理未被阻挡的匹配
             for (let i = 0; i < matches.length; i++) {
                 if (skippedMatches.has(i)) continue; // 跳过被阻挡的匹配（冻结/小怪）
 
@@ -442,21 +432,8 @@ class GameLogic {
                 this.game.board[row][col] = null;
             }
 
-            // 如果有封印颜色的匹配，减少封印回合数
-            const bossSystem = this.game.bossSystem;
-            if (sealedMatches.size > 0 && bossSystem && bossSystem.sealedColorTurns > 0) {
-                bossSystem.sealedColorTurns--;
-                if (bossSystem.sealedColorTurns <= 0) {
-                    this.game.logSystem.addLog('系统', `${COLOR_NAMES[bossSystem.sealedColor]}方块封印已解除`, 'system');
-                    bossSystem.sealedColor = null;
-                    bossSystem.sealedColorTurns = 0;
-                } else {
-                    this.game.logSystem.addLog('封印', `${COLOR_NAMES[bossSystem.sealedColor]}方块封印剩余${bossSystem.sealedColorTurns}回合`, 'system');
-                }
-                this.game.uiRenderer.renderBoard(this.game);
-            }
-
             // 处理炸弹倒计时
+            const bossSystem = this.game.bossSystem;
             if (bossSystem) {
                 for (const [cellKey, countdown] of bossSystem.bombCells.entries()) {
                     const newCountdown = countdown - 1;

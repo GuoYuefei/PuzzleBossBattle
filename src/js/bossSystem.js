@@ -10,8 +10,6 @@ class BossSystem {
         this.playerHp = 100;
         this.playerMaxHp = 100;
         this.bossSkillSealed = 0; // Boss技能被封印的回合数
-        this.sealedColor = null; // 被封印的颜色
-        this.sealedColorTurns = 0; // 颜色封印剩余回合数
         this.frozenCells = new Map(); // 冻结的格子 {row_col: remainingCount}
         this.poisonedCells = new Set(); // 有毒的格子
         this.monsterCells = new Map(); // 小怪格子 {row_col: hp}
@@ -46,8 +44,6 @@ class BossSystem {
         this.playerMaxHp = Math.ceil(bossHp * 0.1);
         this.playerHp = this.playerMaxHp;
         this.bossSkillSealed = 0;
-        this.sealedColor = null;
-        this.sealedColorTurns = 0;
 
         // 清空特殊格子
         this.frozenCells.clear();
@@ -162,8 +158,8 @@ class BossSystem {
             case 'shield':
                 await this.skillShield();
                 break;
-            case 'seal':
-                await this.skillSeal();
+            case 'transform':
+                await this.skillTransform();
                 break;
             case 'countdown':
                 await this.skillCountdown();
@@ -260,18 +256,42 @@ class BossSystem {
         this.game.logSystem.addLog('Boss技能', `获得${shieldAmount}点护盾`, 'system');
     }
 
-    // 技能：元素封印
-    async skillSeal() {
-        // 随机选择一种颜色封印
-        const colors = COLORS;
-        this.sealedColor = colors[Math.floor(Math.random() * colors.length)];
+    // 技能：元素转换
+    async skillTransform() {
+        // 将40%的图形随机转换成其他形状
+        const totalCells = this.game.boardSize * this.game.boardSize;
+        const transformCount = Math.floor(totalCells * 0.4);
+        let transformed = 0;
 
-        // 随机封印1-5回合
-        this.sealedColorTurns = Math.floor(Math.random() * 5) + 1;
+        // 获取所有有方块的格子
+        const availableCells = [];
+        for (let row = 0; row < this.game.boardSize; row++) {
+            for (let col = 0; col < this.game.boardSize; col++) {
+                if (this.game.board[row][col]) {
+                    availableCells.push({ row, col });
+                }
+            }
+        }
 
-        this.game.logSystem.addLog('Boss技能', `封印了${COLOR_NAMES[this.sealedColor]}方块${this.sealedColorTurns}回合`, 'system');
+        // 随机打乱并选择要转换的格子
+        const selected = availableCells
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(transformCount, availableCells.length));
+
+        selected.forEach(({ row, col }) => {
+            const piece = this.game.board[row][col];
+            if (piece) {
+                // 随机选择一个不同于当前形状的新形状
+                const currentShapeIndex = SHAPES.indexOf(piece.shape);
+                const otherShapes = SHAPES.filter((_, index) => index !== currentShapeIndex);
+                const newShape = otherShapes[Math.floor(Math.random() * otherShapes.length)];
+                piece.shape = newShape;
+                transformed++;
+            }
+        });
 
         this.game.uiRenderer.renderBoard(this.game);
+        this.game.logSystem.addLog('Boss技能', `将${transformed}个方块的形状随机转换`, 'system');
     }
 
     // 技能：倒计时攻击
@@ -424,8 +444,6 @@ class BossSystem {
         this.playerHp = 100;
         this.playerMaxHp = 100;
         this.bossSkillSealed = 0;
-        this.sealedColor = null;
-        this.sealedColorTurns = 0;
         this.frozenCells.clear();
         this.poisonedCells.clear();
         this.monsterCells.clear();

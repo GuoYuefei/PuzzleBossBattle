@@ -17,6 +17,7 @@ class BossSystem {
         this.initialMoves = 30; // Boss战初始步数（用于显示）
         this.remainingMovesFromPreviousLevel = 0; // 上一关剩余步数
         this.levelBaseMoves = new Map(); // 每个关卡的基准步数 {关卡: 步数}
+        this.isLevelSelected = false; // 是否是选择关卡
     }
 
     // 初始化Boss
@@ -60,22 +61,20 @@ class BossSystem {
             this.initialMoves = 50;
             this.remainingMovesFromPreviousLevel = 0; // 第一关没有上一关剩余步数
             this.levelBaseMoves.set(1, 50); // 记录第一关基准步数
+            this.isLevelSelected = false; // 第一关不是选择关卡
         } else {
-            // 获取上一关的基准步数
-            const previousBaseMoves = this.levelBaseMoves.get(this.bossLevel - 1) || 50;
+            // 判断是否是选择关卡
+            if (this.isLevelSelected) {
+                // 选择关卡：全部使用初始步数
+                this.game.moves = 50;
+                this.isLevelSelected = false; // 重置标志
+            } else {
+                // 正常通关：基于上一关剩余步数 + 5
+                this.game.moves = this.remainingMovesFromPreviousLevel + 5;
+            }
 
-            // 计算当前关卡的基准步数：上一关基准步数 + 5
-            const currentBaseMoves = previousBaseMoves + 5;
-            this.levelBaseMoves.set(this.bossLevel, currentBaseMoves);
-
-            // 实际步数：基于上一关剩余步数 + 5
-            // 如果是从上一关进入的，使用上一关剩余步数
-            // 如果是选择关卡，使用当前关卡的基准步数
-            const actualMoves = this.remainingMovesFromPreviousLevel > 0
-                ? this.remainingMovesFromPreviousLevel + 5
-                : currentBaseMoves;
-
-            this.game.moves = actualMoves;
+            // 更新基准步数
+            this.levelBaseMoves.set(this.bossLevel, this.game.moves);
             this.initialMoves = 50; // 显示始终显示基础50步
         }
 
@@ -439,6 +438,13 @@ class BossSystem {
         this.game.logSystem.addLog('道具奖励', `击败Boss获得 ${randomItem.icon} ${randomItem.name}`, 'item');
     }
 
+    // 设置关卡（用于选择关卡）
+    setLevel(level) {
+        this.bossLevel = level;
+        this.isLevelSelected = true; // 标记为选择关卡
+        this.remainingMovesFromPreviousLevel = 0; // 重置剩余步数
+    }
+
     // 重置Boss系统
     reset() {
         this.bossLevel = 1;
@@ -453,5 +459,6 @@ class BossSystem {
         this.initialMoves = 30;
         this.remainingMovesFromPreviousLevel = 0;
         this.levelBaseMoves.clear();
+        this.isLevelSelected = false;
     }
 }

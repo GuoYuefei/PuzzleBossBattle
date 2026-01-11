@@ -270,7 +270,7 @@ class Match3Game {
             return;
         }
 
-        this.bossSystem.bossLevel = level;
+        this.bossSystem.setLevel(level);
         this.bossSystem.initBoss();
         this.gameLogic.createBoard();
         this.uiRenderer.renderBoard(this);

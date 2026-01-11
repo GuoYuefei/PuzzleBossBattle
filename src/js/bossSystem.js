@@ -59,9 +59,14 @@ class BossSystem {
             this.initialMoves = 50;
             this.remainingMovesFromPreviousLevel = 0; // 第一关没有上一关剩余步数
         } else {
-            // 基于上一关剩余步数，每过一关加5步
-            const additionalMoves = 5; // 每关增加5步
-            this.game.moves = this.remainingMovesFromPreviousLevel + additionalMoves;
+            // 判断是否是直接选择关卡
+            if (this.remainingMovesFromPreviousLevel > 0) {
+                // 从上一关进入下一关：基于上一关剩余步数+5步
+                this.game.moves = this.remainingMovesFromPreviousLevel + 5;
+            } else {
+                // 直接选择关卡：初始50步 + (关卡-1)×5步
+                this.game.moves = 50 + (this.bossLevel - 1) * 5;
+            }
             this.initialMoves = 50; // 显示始终显示基础50步
         }
 

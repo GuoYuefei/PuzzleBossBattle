@@ -46,6 +46,72 @@ const ITEM_TYPES = {
     }
 };
 
+// Boss名字生成器
+const BOSS_NAMES = [
+    '暗黑魔王', '毁灭之神', '虚空领主', '暗影刺客', '火焰恶魔',
+    '冰霜巨人', '雷霆暴君', '剧毒妖女', '狂战之神', '死灵法师',
+    '深渊领主', '末日使者', '黑暗骑士', '血腥女王', '混沌魔神',
+    '灵魂收割者', '噩梦之王', '绝望魔女', '毁灭之眼', '冥界之主',
+    '黑暗之源', '深渊守护者', '末日审判者', '狂暴之灵', '暗夜君王',
+    '破灭之神', '暗影主宰', '虚空行者', '死亡之翼', '混沌之源'
+];
+
+// Boss技能定义
+const BOSS_SKILLS = {
+    // 棋盘干扰
+    FREEZE: {
+        id: 'freeze',
+        name: '冻结覆盖',
+        type: 'board_interference',
+        description: '冻结随机3-5个方块，需要消除3次才能完全解冻',
+        probability: 0.03
+    },
+    POISON: {
+        id: 'poison',
+        name: '毒素蔓延',
+        type: 'board_interference',
+        description: '随机使1-10个方块含有毒素，消除后扣除玩家血量',
+        probability: 0.02
+    },
+    // 目标干扰
+    SUMMON: {
+        id: 'summon',
+        name: '召唤小怪',
+        type: 'target_interference',
+        description: '在棋盘上生成带有数字的"小怪块"，需多次消除才能击败',
+        probability: 0.03
+    },
+    SHIELD: {
+        id: 'shield',
+        name: '护盾生成',
+        type: 'target_interference',
+        description: '为Boss施加护盾',
+        probability: 0.04
+    },
+    SEAL: {
+        id: 'seal',
+        name: '元素封印',
+        type: 'target_interference',
+        description: '禁止玩家消除某种颜色的棋子若干回合',
+        probability: 0.01
+    },
+    // 直接攻击
+    COUNTDOWN: {
+        id: 'countdown',
+        name: '倒计时攻击',
+        type: 'direct_attack',
+        description: '在棋盘上生成倒计时炸弹，归零时扣除步数',
+        probability: 0.01
+    },
+    NORMAL_ATTACK: {
+        id: 'normal_attack',
+        name: '普通攻击',
+        type: 'direct_attack',
+        description: '每次消除都有可能发生，对玩家造成boss血量的1%伤害',
+        probability: 0.20
+    }
+};
+
 // 消消乐游戏主逻辑
 class Match3Game {
     constructor() {
@@ -60,6 +126,24 @@ class Match3Game {
         this.scoreEl = document.getElementById('score');
         this.movesEl = document.getElementById('moves');
         this.originalClickHandler = null;
+
+        // 游戏模式
+        this.gameMode = 'classic'; // 'classic' or 'boss'
+
+        // Boss战系统
+        this.bossLevel = 1;
+        this.bossMaxLevel = 70;
+        this.boss = null;
+        this.playerHp = 100;
+        this.playerMaxHp = 100;
+        this.bossSkillSealed = 0; // Boss技能被封印的回合数
+        this.sealedColor = null; // 被封印的颜色
+        this.sealedColorTurns = 0; // 颜色封印剩余回合数
+        this.frozenCells = new Map(); // 冻结的格子 {row_col: remainingCount}
+        this.poisonedCells = new Set(); // 有毒的格子
+        this.monsterCells = new Map(); // 小怪格子 {row_col: hp}
+        this.bombCells = new Map(); // 炸弹格子 {row_col: countdown}
+        this.initialMoves = 30; // Boss战初始步数（用于显示）
 
         // 道具系统
         this.items = {
@@ -152,6 +236,556 @@ class Match3Game {
         // 默认返回绿色三角形（最常见）
         return { shape: 'triangle', color: 'green' };
     }
+
+    // ========== Boss战系统相关方法 ==========
+
+    // 切换游戏模式
+    switchMode(mode) {
+        if (this.gameMode === mode) return;
+
+        this.gameMode = mode;
+
+        // 更新UI按钮状态
+        document.getElementById('classic-mode-btn').classList.toggle('active', mode === 'classic');
+        document.getElementById('boss-mode-btn').classList.toggle('active', mode === 'boss');
+
+        // 显示/隐藏Boss面板
+        const bossPanel = document.getElementById('boss-panel');
+        bossPanel.classList.toggle('active', mode === 'boss');
+
+        // 显示/隐藏玩家血量条
+        const playerHpBar = document.getElementById('player-hp-container');
+        playerHpBar.classList.toggle('active', mode === 'boss');
+
+        // 显示/隐藏关卡选择按钮
+        const levelSelectBtn = document.getElementById('level-select-btn');
+        levelSelectBtn.style.display = mode === 'boss' ? 'inline-block' : 'none';
+
+        // 重新开始游戏
+        this.restart();
+    }
+
+    // 初始化Boss
+    initBoss() {
+        // 计算Boss血量：每关增加100，1-10关为100-1000
+        const bossHp = this.bossLevel * 100;
+
+        // 计算Boss技能触发率
+        const skillRate = this.getBossSkillRate();
+
+        // 随机生成Boss名字
+        const bossName = BOSS_NAMES[Math.floor(Math.random() * BOSS_NAMES.length)];
+
+        // 生成Boss头像（组合简单形象）
+        const bossAvatars = ['👹', '👺', '🤡', '👿', '💀', '👻', '👽', '🤖', '🎃', '😈'];
+        const bossAvatar = bossAvatars[Math.floor(Math.random() * bossAvatars.length)];
+
+        this.boss = {
+            name: bossName,
+            avatar: bossAvatar,
+            maxHp: bossHp,
+            hp: bossHp,
+            shield: 0,
+            skillRate: skillRate
+        };
+
+        // 玩家血量为Boss的10%，每关回满
+        this.playerMaxHp = Math.ceil(bossHp * 0.1);
+        this.playerHp = this.playerMaxHp;
+        this.bossSkillSealed = 0;
+        this.sealedColor = null;
+        this.sealedColorTurns = 0;
+
+        // 清空特殊格子
+        this.frozenCells.clear();
+        this.poisonedCells.clear();
+        this.monsterCells.clear();
+        this.bombCells.clear();
+
+        // 计算Boss战步数：初始50步 + (每关+10步) + (整十关额外+30步)
+        // 例如：第1关=50步，第10关=50+90+30=170步，第70关=50+690+210=950步
+        const baseSteps = 50;
+        const stepsPerLevel = 10;
+        const bonusForTenthLevels = 30;
+
+        // 计算到当前关卡的总步数
+        // 已击败的boss数量 = 当前关卡 - 1
+        const defeatedBosses = this.bossLevel - 1;
+        const tenthLevelsPassed = Math.floor(defeatedBosses / 10);
+
+        this.moves = baseSteps + (defeatedBosses * stepsPerLevel) + (tenthLevelsPassed * bonusForTenthLevels);
+        this.initialMoves = this.moves; // 记录初始步数用于显示
+
+        // 更新Boss UI
+        this.updateBossUI();
+        this.updateMoves();
+    }
+
+    // 获取Boss技能触发率
+    getBossSkillRate() {
+        const level = this.bossLevel;
+
+        // 1-9关：10%
+        if (level <= 9) return 0.1;
+        // 10关：30%
+        if (level === 10) return 0.3;
+        // 11-19关：20%
+        if (level <= 19) return 0.2;
+        // 20关：40%
+        if (level === 20) return 0.4;
+        // 21-29关：30%
+        if (level <= 29) return 0.3;
+        // 30关：50%
+        if (level === 30) return 0.5;
+        // 31-39关：40%
+        if (level <= 39) return 0.4;
+        // 40关：60%
+        if (level === 40) return 0.6;
+        // 41-49关：50%
+        if (level <= 49) return 0.5;
+        // 50关：70%
+        if (level === 50) return 0.7;
+        // 51-59关：60%
+        if (level <= 59) return 0.6;
+        // 60关：80%
+        if (level === 60) return 0.8;
+        // 61-69关：70%
+        if (level <= 69) return 0.7;
+        // 70关：90%
+        return 0.9;
+    }
+
+    // 更新Boss UI
+    updateBossUI() {
+        if (!this.boss) return;
+
+        // 更新Boss基本信息
+        document.getElementById('boss-avatar').textContent = this.boss.avatar;
+        document.getElementById('boss-name').textContent = this.boss.name;
+        document.getElementById('boss-level').textContent = `第${this.bossLevel}关`;
+
+        // 更新Boss血条
+        const bossHpPercent = (this.boss.hp / this.boss.maxHp) * 100;
+        const bossHpFill = document.getElementById('boss-hp-fill');
+        bossHpFill.style.width = bossHpPercent + '%';
+        bossHpFill.classList.toggle('shielded', this.boss.shield > 0);
+        // 血量文本单独更新
+        document.getElementById('boss-hp-text').textContent = `${this.boss.hp}/${this.boss.maxHp}`;
+
+        // 更新Boss护盾
+        const shieldPercent = this.boss.shield > 0 ? (this.boss.shield / this.boss.maxHp) * 100 : 0;
+        const shieldFill = document.getElementById('boss-shield-fill');
+        shieldFill.style.width = shieldPercent + '%';
+
+        // 更新玩家血条
+        const playerHpPercent = (this.playerHp / this.playerMaxHp) * 100;
+        document.getElementById('player-hp-fill').style.width = playerHpPercent + '%';
+        document.getElementById('player-hp-text').textContent = `${this.playerHp}/${this.playerMaxHp}`;
+
+        // 更新技能封印状态（Boss技能被封印）
+        const sealIndicator = document.getElementById('skill-seal-indicator');
+        const bossAvatar = document.getElementById('boss-avatar');
+        if (this.bossSkillSealed > 0) {
+            sealIndicator.classList.add('active');
+            document.getElementById('seal-remaining').textContent = this.bossSkillSealed;
+            bossAvatar.classList.add('sealed');
+        } else {
+            sealIndicator.classList.remove('active');
+            bossAvatar.classList.remove('sealed');
+        }
+
+        // 更新颜色封印状态
+        const colorSealIndicator = document.getElementById('color-seal-indicator');
+        if (this.sealedColor && this.sealedColorTurns > 0) {
+            const colorNames = { green: '绿色', blue: '蓝色', red: '红色' };
+            colorSealIndicator.classList.add('active');
+            document.getElementById('color-seal-text').textContent = colorNames[this.sealedColor];
+            document.getElementById('color-seal-remaining').textContent = this.sealedColorTurns;
+        } else {
+            colorSealIndicator.classList.remove('active');
+        }
+    }
+
+    // Boss触发技能
+    async triggerBossSkill() {
+        // 如果Boss被红方块封印，不触发技能
+        if (this.bossSkillSealed > 0) {
+            this.addLog('Boss', `技能被封印，剩余${this.bossSkillSealed}回合`, 'system');
+            this.bossSkillSealed--;
+            this.updateBossUI();
+            return;
+        }
+
+        // 检查是否触发技能
+        if (Math.random() > this.boss.skillRate) {
+            return;
+        }
+
+        // 随机选择一个技能
+        const skills = Object.values(BOSS_SKILLS);
+        let selectedSkill = skills[Math.floor(Math.random() * skills.length)];
+
+        // 根据概率重新选择
+        const rand = Math.random();
+        let cumulative = 0;
+        for (const skill of skills) {
+            cumulative += skill.probability;
+            if (rand <= cumulative) {
+                selectedSkill = skill;
+                break;
+            }
+        }
+
+        // 执行技能
+        await this.executeBossSkill(selectedSkill);
+    }
+
+    // 执行Boss技能
+    async executeBossSkill(skill) {
+        // 显示技能动画
+        this.showSkillAnimation(skill.name);
+
+        this.addLog('Boss技能', `${skill.name}：${skill.description}`, 'system');
+
+        switch (skill.id) {
+            case 'freeze':
+                await this.skillFreeze();
+                break;
+            case 'poison':
+                await this.skillPoison();
+                break;
+            case 'summon':
+                await this.skillSummon();
+                break;
+            case 'shield':
+                await this.skillShield();
+                break;
+            case 'seal':
+                await this.skillSeal();
+                break;
+            case 'countdown':
+                await this.skillCountdown();
+                break;
+            case 'normal_attack':
+                await this.skillNormalAttack();
+                break;
+        }
+
+        // 检查并确保棋盘可玩
+        if (!this.hasPossibleMoves()) {
+            this.addLog('系统', 'Boss技能后棋盘死局，自动刷新', 'system');
+            await this.refreshBoard();
+        }
+    }
+
+    // 技能：冻结覆盖
+    async skillFreeze() {
+        const freezeCount = Math.floor(Math.random() * 3) + 3; // 3-5个
+        const availableCells = [];
+
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (!this.frozenCells.has(`${row},${col}`)) {
+                    availableCells.push({ row, col });
+                }
+            }
+        }
+
+        const selected = availableCells
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(freezeCount, availableCells.length));
+
+        selected.forEach(({ row, col }) => {
+            this.frozenCells.set(`${row},${col}`, 3); // 需要消除3次
+        });
+
+        this.renderBoard();
+        this.addLog('Boss技能', `冻结了${selected.length}个方块`, 'system');
+    }
+
+    // 技能：毒素蔓延
+    async skillPoison() {
+        const poisonCount = Math.floor(Math.random() * 10) + 1; // 1-10个
+        const availableCells = [];
+
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (!this.poisonedCells.has(`${row},${col}`)) {
+                    availableCells.push({ row, col });
+                }
+            }
+        }
+
+        const selected = availableCells
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(poisonCount, availableCells.length));
+
+        selected.forEach(({ row, col }) => {
+            this.poisonedCells.add(`${row},${col}`);
+        });
+
+        this.renderBoard();
+        this.addLog('Boss技能', `使${selected.length}个方块带有毒素`, 'system');
+    }
+
+    // 技能：召唤小怪
+    async skillSummon() {
+        const availableCells = [];
+
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (!this.monsterCells.has(`${row},${col}`)) {
+                    availableCells.push({ row, col });
+                }
+            }
+        }
+
+        const selected = availableCells
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(3, availableCells.length));
+
+        selected.forEach(({ row, col }) => {
+            const hp = Math.floor(Math.random() * 3) + 2; // 2-4点血
+            this.monsterCells.set(`${row},${col}`, hp);
+        });
+
+        this.renderBoard();
+        this.addLog('Boss技能', `召唤了${selected.length}个小怪`, 'system');
+    }
+
+    // 技能：护盾生成
+    async skillShield() {
+        const shieldRate = 0.1 + Math.random() * 0.2; // 0.1-0.3倍
+        const shieldAmount = Math.ceil(this.boss.maxHp * shieldRate);
+
+        this.boss.shield += shieldAmount;
+        this.updateBossUI();
+
+        this.addLog('Boss技能', `获得${shieldAmount}点护盾`, 'system');
+    }
+
+    // 技能：元素封印
+    async skillSeal() {
+        // 随机选择一种颜色封印
+        const colors = ['green', 'blue', 'red'];
+        this.sealedColor = colors[Math.floor(Math.random() * colors.length)];
+
+        // 随机封印1-5回合
+        this.sealedColorTurns = Math.floor(Math.random() * 5) + 1;
+
+        const colorNames = { green: '绿色', blue: '蓝色', red: '红色' };
+        this.addLog('Boss技能', `封印了${colorNames[this.sealedColor]}方块${this.sealedColorTurns}回合`, 'system');
+
+        this.renderBoard();
+    }
+
+    // 技能：倒计时攻击
+    async skillCountdown() {
+        const availableCells = [];
+
+        for (let row = 0; row < this.boardSize; row++) {
+            for (let col = 0; col < this.boardSize; col++) {
+                if (!this.bombCells.has(`${row},${col}`)) {
+                    availableCells.push({ row, col });
+                }
+            }
+        }
+
+        if (availableCells.length === 0) return;
+
+        const selected = availableCells[Math.floor(Math.random() * availableCells.length)];
+        const countdown = Math.floor(Math.random() * 3) + 3; // 3-5回合
+        this.bombCells.set(`${selected.row},${selected.col}`, countdown);
+
+        this.renderBoard();
+        this.addLog('Boss技能', `在棋盘上放置了倒计时炸弹（${countdown}回合）`, 'system');
+    }
+
+    // 技能：普通攻击
+    async skillNormalAttack() {
+        const damage = Math.ceil(this.boss.maxHp * 0.01);
+        this.playerHp -= damage;
+
+        this.showDamageNumber(damage, 'damage');
+        this.updateBossUI();
+
+        this.addLog('Boss攻击', `对玩家造成${damage}点伤害`, 'system');
+
+        // 检查玩家是否死亡
+        if (this.playerHp <= 0) {
+            this.playerHp = 0;
+            this.updateBossUI();
+            this.endGame(false); // 玩家失败
+        }
+    }
+
+    // 玩家攻击Boss
+    async playerAttackBoss(score, greenCount, redCount, matchCount) {
+        if (!this.boss || this.gameMode !== 'boss') return;
+
+        // 绿色方块回血
+        if (greenCount > 0) {
+            const healAmount = Math.ceil(score * 0.2);
+            const actualHeal = Math.min(healAmount, this.playerMaxHp - this.playerHp);
+            this.playerHp += actualHeal;
+            if (actualHeal > 0) {
+                this.showDamageNumber(actualHeal, 'heal');
+                this.addLog('玩家回血', `绿色方块恢复${actualHeal}点生命`, 'system');
+            }
+        }
+
+        // 红色方块封印Boss技能（不记录日志，界面已显示）
+        if (redCount > 0) {
+            this.bossSkillSealed += redCount;
+        }
+
+        // 对Boss造成伤害
+        let damage = score;
+
+        // 先扣护盾
+        if (this.boss.shield > 0) {
+            if (damage >= this.boss.shield) {
+                damage -= this.boss.shield;
+                this.boss.shield = 0;
+                this.addLog('护盾破碎', 'Boss护盾已破碎', 'system');
+            } else {
+                this.boss.shield -= damage;
+                damage = 0;
+                this.addLog('护盾抵挡', `Boss护盾抵挡了${score}点伤害`, 'system');
+            }
+        }
+
+        // 扣Boss血量
+        if (damage > 0) {
+            this.boss.hp -= damage;
+            if (this.boss.hp < 0) this.boss.hp = 0;
+            this.showDamageNumber(damage, 'boss-damage');
+            this.addLog('玩家攻击', `对Boss造成${damage}点伤害`, 'system');
+        }
+
+        this.updateBossUI();
+
+        // 检查Boss是否被击败
+        if (this.boss.hp <= 0) {
+            await this.bossDefeated();
+        }
+    }
+
+    // Boss被击败
+    async bossDefeated() {
+        this.showMatchEffect('Boss被击败！');
+
+        // 保存最高关卡
+        this.saveMaxLevel();
+
+        // 随机给1个道具
+        this.giveRandomItemAfterBoss();
+
+        // 检查是否通关
+        if (this.bossLevel >= this.bossMaxLevel) {
+            setTimeout(() => {
+                alert('恭喜你通关了所有70关！');
+                this.switchMode('classic');
+            }, 500);
+            return;
+        }
+
+        // 进入下一关
+        this.bossLevel++;
+        await this.delay(1000);
+        this.initBoss();
+        this.addLog('系统', `进入第${this.bossLevel}关`, 'system');
+    }
+
+    // 保存最高关卡
+    saveMaxLevel() {
+        if (this.bossLevel > this.getMaxLevel()) {
+            localStorage.setItem('boss_max_level', this.bossLevel.toString());
+        }
+    }
+
+    // 获取最高关卡
+    getMaxLevel() {
+        const saved = localStorage.getItem('boss_max_level');
+        return saved ? parseInt(saved) : 1;
+    }
+
+    // Boss击败后随机给1个道具
+    giveRandomItemAfterBoss() {
+        // 所有道具（普通+特殊）
+        const allItems = Object.values(ITEM_TYPES);
+        const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
+
+        this.items[randomItem.id]++;
+        this.updateItemsDisplay();
+        this.showItemGain(randomItem);
+        this.addLog('道具奖励', `击败Boss获得 ${randomItem.icon} ${randomItem.name}`, 'item');
+    }
+
+    // 显示关卡选择
+    showLevelSelection() {
+        const maxLevel = this.getMaxLevel();
+        let html = '<h3>选择关卡</h3><p>当前最高关卡：' + maxLevel + '</p>';
+        html += '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-height: 300px; overflow-y: auto;">';
+
+        for (let i = 1; i <= maxLevel; i++) {
+            html += `<button onclick="game.startFromLevel(${i})" style="padding: 8px; margin: 2px;">${i}</button>`;
+        }
+
+        html += '</div>';
+        html += '<button onclick="game.closeModal()" style="margin-top: 15px;">取消</button>';
+
+        this.showModal('关卡选择', html);
+    }
+
+    // 从指定关卡开始
+    startFromLevel(level) {
+        if (level < 1 || level > this.getMaxLevel()) {
+            alert('无效的关卡！');
+            return;
+        }
+
+        this.bossLevel = level;
+        this.initBoss();
+        this.createBoard();
+        this.renderBoard();
+        this.closeModal();
+        this.addLog('系统', `从第${level}关开始`, 'system');
+    }
+
+    // 显示技能动画
+    showSkillAnimation(text) {
+        const anim = document.createElement('div');
+        anim.className = 'skill-animation';
+        anim.textContent = text;
+        document.body.appendChild(anim);
+
+        setTimeout(() => {
+            document.body.removeChild(anim);
+        }, 1500);
+    }
+
+    // 显示伤害数字
+    showDamageNumber(damage, type) {
+        const dmgEl = document.createElement('div');
+        dmgEl.className = `damage-number ${type}`;
+
+        // 随机位置在屏幕中央附近
+        const x = 50 + (Math.random() - 0.5) * 20;
+        const y = 50 + (Math.random() - 0.5) * 20;
+
+        dmgEl.style.left = x + '%';
+        dmgEl.style.top = y + '%';
+        dmgEl.textContent = type === 'heal' ? `+${damage}` : `-${damage}`;
+
+        document.body.appendChild(dmgEl);
+
+        setTimeout(() => {
+            document.body.removeChild(dmgEl);
+        }, 1000);
+    }
+
+    // ========== 原有游戏逻辑 ==========
 
     init() {
         this.createBoard();
@@ -254,7 +888,33 @@ class Match3Game {
                 cell.dataset.row = row;
                 cell.dataset.col = col;
 
+                const cellKey = `${row},${col}`;
                 const piece = this.board[row][col];
+
+                // 处理特殊格子状态
+                if (this.frozenCells.has(cellKey)) {
+                    cell.classList.add('frozen-cell');
+                }
+
+                if (this.poisonedCells.has(cellKey)) {
+                    cell.classList.add('poisoned-cell');
+                }
+
+                if (this.monsterCells.has(cellKey)) {
+                    cell.classList.add('monster-cell');
+                    cell.dataset.hp = this.monsterCells.get(cellKey);
+                }
+
+                if (this.bombCells.has(cellKey)) {
+                    cell.classList.add('bomb-cell');
+                    cell.dataset.countdown = this.bombCells.get(cellKey);
+                }
+
+                // 处理颜色封印
+                if (piece && this.sealedColor && piece.color === this.sealedColor) {
+                    cell.classList.add('sealed-color');
+                }
+
                 if (piece) {
                     const pieceEl = this.createPieceElement(piece);
                     cell.appendChild(pieceEl);
@@ -334,6 +994,13 @@ class Match3Game {
 
         const row = parseInt(cell.dataset.row);
         const col = parseInt(cell.dataset.col);
+        const cellKey = `${row},${col}`;
+
+        // Boss战模式：检查是否点击了冻结的方块
+        if (this.gameMode === 'boss' && this.frozenCells.has(cellKey)) {
+            this.showMatchEffect('该方块被冻结，无法移动！');
+            return;
+        }
 
         // 选择第一个格子时，清除放大镜的高亮
         if (this.selectedCell === null) {
@@ -349,6 +1016,14 @@ class Match3Game {
 
             // 点击同一个格子，取消选择
             if (prevRow === row && prevCol === col) {
+                this.clearSelection();
+                return;
+            }
+
+            // Boss战模式：检查第二个方块是否被冻结
+            const prevCellKey = `${prevRow},${prevCol}`;
+            if (this.gameMode === 'boss' && this.frozenCells.has(prevCellKey)) {
+                this.showMatchEffect('该方块被冻结，无法移动！');
                 this.clearSelection();
                 return;
             }
@@ -563,12 +1238,22 @@ class Match3Game {
 
     async processMatches() {
         let hasMatches = true;
+        let totalScore = 0;
+        let totalGreenCount = 0;
+        let totalRedCount = 0;
+        let totalMatchCount = 0;
+        const initialScore = this.score; // 记录初始分数用于计算三部曲倍率后的实际伤害
 
         while (hasMatches) {
             const matches = this.findMatches();
 
             if (matches.length === 0) {
                 hasMatches = false;
+
+                // Boss战模式：触发Boss技能
+                if (this.gameMode === 'boss' && totalMatchCount > 0) {
+                    await this.triggerBossSkill();
+                }
 
                 // 检查是否死局，如果死局则自动刷新
                 if (!this.hasPossibleMoves()) {
@@ -586,16 +1271,112 @@ class Match3Game {
                 this.showCombo(this.comboCount);
             }
 
-            // 计算分数（传入连击数）
-            const score = this.calculateScore(matches, matchAnalysis, this.comboCount);
+            // 计算分数和颜色统计（传入连击数）
+            const { score, greenCount, redCount, matchCount } = this.calculateScore(matches, matchAnalysis, this.comboCount);
+            totalScore += score;
+            totalGreenCount += greenCount;
+            totalRedCount += redCount;
+            totalMatchCount += matchCount;
             this.addScore(score);
 
-            // 标记匹配的格子
+            // 标记匹配的格子并处理特殊状态
             const matchedCells = new Set();
-            for (const match of matches) {
+            const blockedCells = new Set(); // 被阻挡的格子（冻结或小怪未完全消除）
+            const skippedMatches = new Set(); // 被跳过的匹配索引（冻结/小怪）
+            const sealedMatches = new Set(); // 被封印颜色的匹配索引（不加分但会消除）
+
+            // 首先检查哪些匹配包含被阻挡的格子或封印颜色
+            for (let i = 0; i < matches.length; i++) {
+                const match = matches[i];
+                let matchBlocked = false;
+                let matchSealed = false;
+
                 for (const cell of match.cells) {
-                    matchedCells.add(`${cell.row},${cell.col}`);
+                    const cellKey = `${cell.row},${cell.col}`;
+                    const piece = this.board[cell.row][cell.col];
+
+                    // 检查这个格子是否被阻挡（冻结或小怪）
+                    if (this.frozenCells.has(cellKey) || this.monsterCells.has(cellKey)) {
+                        matchBlocked = true;
+                        break;
+                    }
+
+                    // 检查是否被封印颜色
+                    if (piece && this.sealedColor && piece.color === this.sealedColor) {
+                        matchSealed = true;
+                    }
                 }
+
+                if (matchBlocked) {
+                    // 这个匹配被阻挡，需要处理其中的冻结/小怪格子
+                    skippedMatches.add(i);
+
+                    for (const cell of match.cells) {
+                        const cellKey = `${cell.row},${cell.col}`;
+
+                        // 处理冻结格子（只减少计数，不消除）
+                        if (this.frozenCells.has(cellKey)) {
+                            const remaining = this.frozenCells.get(cellKey) - 1;
+                            if (remaining <= 0) {
+                                this.frozenCells.delete(cellKey);
+                                // 冻结解除，但方块保留在棋盘上
+                            } else {
+                                this.frozenCells.set(cellKey, remaining);
+                                blockedCells.add(cellKey);
+                            }
+                        }
+
+                        // 处理小怪格子（只减少HP，不消除）
+                        if (this.monsterCells.has(cellKey)) {
+                            const hp = this.monsterCells.get(cellKey) - 1;
+                            if (hp <= 0) {
+                                this.monsterCells.delete(cellKey);
+                                // 小怪被击败，但方块保留在棋盘上
+                            } else {
+                                this.monsterCells.set(cellKey, hp);
+                                blockedCells.add(cellKey);
+                            }
+                        }
+                    }
+                } else if (matchSealed) {
+                    // 这个匹配包含封印颜色，标记为封印匹配（不加分但会消除）
+                    sealedMatches.add(i);
+                }
+            }
+
+            // 处理未被阻挡的匹配和封印颜色的匹配
+            for (let i = 0; i < matches.length; i++) {
+                if (skippedMatches.has(i)) continue; // 跳过被阻挡的匹配（冻结/小怪）
+
+                const match = matches[i];
+                for (const cell of match.cells) {
+                    const cellKey = `${cell.row},${cell.col}`;
+
+                    // 处理毒素格子（毒素不影响消除，只是扣血）
+                    if (this.poisonedCells.has(cellKey)) {
+                        const piece = this.board[cell.row][cell.col];
+                        if (piece) {
+                            const baseDamage = this.shapeScores[piece.shape] * this.colorMultipliers[piece.color];
+                            this.playerHp -= Math.ceil(baseDamage);
+                            this.addLog('毒素伤害', `中毒方块扣除${Math.ceil(baseDamage)}点生命`, 'system');
+                            this.poisonedCells.delete(cellKey);
+
+                            if (this.playerHp <= 0) {
+                                this.playerHp = 0;
+                                this.updateBossUI();
+                                this.endGame(false);
+                                return;
+                            }
+                        }
+                    }
+
+                    matchedCells.add(cellKey);
+                }
+            }
+
+            // 如果有被阻挡的格子，需要重新渲染棋盘以更新冻结/小怪状态
+            if (blockedCells.size > 0) {
+                this.renderBoard();
             }
 
             // 播放消除动画
@@ -616,11 +1397,49 @@ class Match3Game {
                 this.board[row][col] = null;
             }
 
+            // 如果有封印颜色的匹配，减少封印回合数
+            if (sealedMatches.size > 0 && this.sealedColorTurns > 0) {
+                this.sealedColorTurns--;
+                if (this.sealedColorTurns <= 0) {
+                    const colorNames = { green: '绿色', blue: '蓝色', red: '红色' };
+                    this.addLog('系统', `${colorNames[this.sealedColor]}方块封印已解除`, 'system');
+                    this.sealedColor = null;
+                    this.sealedColorTurns = 0;
+                } else {
+                    const colorNames = { green: '绿色', blue: '蓝色', red: '红色' };
+                    this.addLog('封印', `${colorNames[this.sealedColor]}方块封印剩余${this.sealedColorTurns}回合`, 'system');
+                }
+                this.renderBoard();
+            }
+
+            // 处理炸弹倒计时
+            for (const [cellKey, countdown] of this.bombCells.entries()) {
+                const newCountdown = countdown - 1;
+                if (newCountdown <= 0) {
+                    // 炸弹爆炸，扣除步数
+                    this.moves = Math.max(0, this.moves - 3);
+                    this.updateMoves();
+                    this.bombCells.delete(cellKey);
+                    this.showMatchEffect('炸弹爆炸！扣除3步！');
+                    this.addLog('炸弹', '倒计时归零，扣除3步', 'system');
+                } else {
+                    this.bombCells.set(cellKey, newCountdown);
+                }
+            }
+
             // 下落填充
             await this.dropPieces();
             await this.fillBoard();
 
             await this.delay(200);
+        }
+
+        // Boss战模式：玩家攻击Boss
+        if (this.gameMode === 'boss' && totalMatchCount > 0) {
+            // 使用实际增加的分数（包括三部曲倍率）
+            const actualDamage = this.score - initialScore;
+            await this.playerAttackBoss(actualDamage, totalGreenCount, totalRedCount, totalMatchCount);
+            this.updateBossUI();
         }
     }
 
@@ -669,6 +1488,9 @@ class Match3Game {
 
     calculateScore(matches, matchAnalysis, comboCount) {
         let totalScore = 0;
+        let greenCount = 0;
+        let redCount = 0;
+        let matchCount = 0;
 
         // 计算连击倍数（第2次*2，第3次*3，...，第5次及以上*5）
         let comboMultiplier = 1;
@@ -687,6 +1509,14 @@ class Match3Game {
                     matchedCells.add(key);
                     const piece = this.board[cell.row][cell.col];
                     if (piece) {
+                        // 统计绿色方块总分（用于回血）和红色方块数量（用于封印）
+                        if (piece.color === 'green') {
+                            greenCount += this.shapeScores[piece.shape];
+                        } else if (piece.color === 'red') {
+                            redCount += 1; // 红色方块数量+1
+                        }
+                        matchCount++;
+
                         const groupKey = `${piece.shape}-${piece.color}`;
                         if (!shapeColorGroups[groupKey]) {
                             shapeColorGroups[groupKey] = {
@@ -781,7 +1611,7 @@ class Match3Game {
         // 添加得分日志
         this.addLog('得分', `${matchType}${tripleInfo} +${Math.floor(totalScore)}分`, 'score', formula);
 
-        return Math.floor(totalScore);
+        return { score: Math.floor(totalScore), greenCount, redCount, matchCount };
     }
 
     getShapeName(shape) {
@@ -937,7 +1767,11 @@ class Match3Game {
     }
 
     updateMoves() {
-        this.movesEl.textContent = this.moves;
+        if (this.gameMode === 'boss') {
+            this.movesEl.textContent = `${this.moves}步`;
+        } else {
+            this.movesEl.textContent = this.moves;
+        }
     }
 
     showCombo(combo) {
@@ -965,7 +1799,22 @@ class Match3Game {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    endGame() {
+    endGame(isVictory = true) {
+        if (this.gameMode === 'boss') {
+            if (!isVictory) {
+                // 玩家失败，重新开始当前关卡
+                this.showMatchEffect('游戏结束！');
+                setTimeout(() => {
+                    alert(`你在第${this.bossLevel}关被Boss击败了！`);
+                    this.initBoss();
+                    this.createBoard();
+                    this.renderBoard();
+                }, 500);
+            }
+            return;
+        }
+
+        // 经典模式的游戏结束
         document.getElementById('final-score').textContent = this.score;
         document.getElementById('game-over').classList.add('active');
     }
@@ -991,6 +1840,12 @@ class Match3Game {
             [ITEM_TYPES.SWAP.id]: 0
         };
 
+        // Boss战模式：重置关卡和Boss
+        if (this.gameMode === 'boss') {
+            this.bossLevel = 1;
+            this.initBoss();
+        }
+
         this.updateScore();
         this.updateMoves();
         this.createBoard();
@@ -1001,7 +1856,8 @@ class Match3Game {
         if (this.logContent) {
             this.logContent.innerHTML = '';
             this.gameLog = [];
-            this.addLog('系统', '游戏开始！普通道具各1个，每100分获得随机奖励', 'system');
+            const modeText = this.gameMode === 'boss' ? 'Boss战模式开始！' : '游戏开始！普通道具各1个，每100分获得随机奖励';
+            this.addLog('系统', modeText, 'system');
         }
 
         document.getElementById('game-over').classList.remove('active');
@@ -1517,10 +2373,78 @@ class Match3Game {
     }
 
     showRules() {
-        const rulesHTML = `
-            <h3>游戏规则</h3>
+        const isBossMode = this.gameMode === 'boss';
+
+        let rulesHTML = `
+            <h3>游戏模式</h3>
+            <p>当前模式：<strong>${isBossMode ? 'Boss战模式' : '经典模式'}</strong></p>
+            <p>点击上方的模式按钮可以切换游戏模式。</p>
+
+            <h3>基本规则</h3>
             <p>交换相邻的图形，使3个或更多相同图形连成一线即可消除。</p>
 
+            ${isBossMode ? this.getBossModeRules() : this.getClassicModeRules()}
+        `;
+
+        this.showModal('游戏规则', rulesHTML);
+    }
+
+    getBossModeRules() {
+        return `
+            <h3>Boss战模式说明</h3>
+            <p>共有70关，每关Boss血量增加100。击败Boss进入下一关。</p>
+
+            <h3>Boss技能触发率</h3>
+            <table class="rules-table">
+                <tr><th>关卡</th><th>技能触发率</th></tr>
+                <tr><td>1-9关</td><td>10%</td></tr>
+                <tr><td>10关</td><td>30%</td></tr>
+                <tr><td>11-19关</td><td>20%</td></tr>
+                <tr><td>20关</td><td>40%</td></tr>
+                <tr><td>21-29关</td><td>30%</td></tr>
+                <tr><td>30关</td><td>50%</td></tr>
+                <tr><td>...</td><td>...</td></tr>
+                <tr><td>70关</td><td>90%</td></tr>
+            </table>
+
+            <h3>Boss技能</h3>
+            <h4>棋盘干扰</h4>
+            <table class="rules-table">
+                <tr><th>技能</th><th>效果</th><th>概率</th></tr>
+                <tr><td>冻结覆盖</td><td>冻结3-5个方块，需消除3次解冻</td><td>3%</td></tr>
+                <tr><td>毒素蔓延</td><td>使1-10个方块含毒素，消除扣血</td><td>2%</td></tr>
+            </table>
+
+            <h4>目标干扰</h4>
+            <table class="rules-table">
+                <tr><th>技能</th><th>效果</th><th>概率</th></tr>
+                <tr><td>召唤小怪</td><td>生成需多次消除的小怪块</td><td>3%</td></tr>
+                <tr><td>护盾生成</td><td>Boss获得护盾</td><td>7%</td></tr>
+                <tr><td>元素封印</td><td>禁止消除某种颜色若干回合</td><td>1%</td></tr>
+            </table>
+
+            <h4>直接攻击</h4>
+            <table class="rules-table">
+                <tr><th>技能</th><th>效果</th><th>概率</th></tr>
+                <tr><td>倒计时攻击</td><td>放置炸弹，归零扣步数</td><td>1%</td></tr>
+                <tr><td>普通攻击</td><td>每次消除可能发生，造成Boss血量1%伤害</td><td>20%</td></tr>
+            </table>
+
+            <h3>玩家攻击与特殊效果</h3>
+            <table class="rules-table">
+                <tr><th>颜色</th><th>效果</th></tr>
+                <tr><td>绿色方块</td><td>消除后回血（分数×20%，向上取整）</td></tr>
+                <tr><td>红色方块</td><td>消除图案数量封印Boss技能相应回合数</td></tr>
+                <tr><td>任意颜色</td><td>消除后对Boss造成分数点伤害</td></tr>
+            </table>
+
+            <h3>回合说明</h3>
+            <p>每次消除就是一回合，消除后Boss可能触发技能。Boss技能后会自动判活确保棋盘可玩。</p>
+        `;
+    }
+
+    getClassicModeRules() {
+        return `
             <h3>计分规则</h3>
             <table class="rules-table">
                 <tr>
@@ -1675,8 +2599,6 @@ class Match3Game {
                 </tr>
             </table>
         `;
-
-        this.showModal('游戏规则', rulesHTML);
     }
 
     showModal(title, content) {

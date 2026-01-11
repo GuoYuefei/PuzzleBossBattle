@@ -252,14 +252,50 @@ class GameLogic {
             return 'T';
         }
 
-        // 如果只有一个横向和一个纵向，检查长度
+        // 如果只有一个横向和一个纵向，检查交叉点的位置
         if (horizontal.length === 1 && vertical.length === 1) {
-            const hLen = horizontal[0].cells.length;
-            const vLen = vertical[0].cells.length;
+            const hMatch = horizontal[0];
+            const vMatch = vertical[0];
+            const hLen = hMatch.cells.length;
+            const vLen = vMatch.cells.length;
 
-            // T型：至少有一个方向的长度>=4
-            if (hLen >= 4 || vLen >= 4) {
-                return 'T';
+            // 找到交叉点
+            let intersectionPoint = null;
+            for (const hCell of hMatch.cells) {
+                for (const vCell of vMatch.cells) {
+                    if (hCell.row === vCell.row && hCell.col === vCell.col) {
+                        intersectionPoint = { row: hCell.row, col: hCell.col };
+                        break;
+                    }
+                }
+                if (intersectionPoint) break;
+            }
+
+            // T型：交叉点应该在较长线的中间位置附近
+            if (intersectionPoint) {
+                // 检查横向匹配：交叉点是否在横向线的中间1/3位置
+                if (hLen >= 4) {
+                    const middleIndex = Math.floor(hLen / 2);
+                    const middleThreshold = Math.floor(hLen / 3);
+                    const intersectionIndex = hMatch.cells.findIndex(c =>
+                        c.row === intersectionPoint.row && c.col === intersectionPoint.col
+                    );
+                    if (Math.abs(intersectionIndex - middleIndex) <= middleThreshold) {
+                        return 'T';
+                    }
+                }
+
+                // 检查纵向匹配：交叉点是否在纵向线的中间1/3位置
+                if (vLen >= 4) {
+                    const middleIndex = Math.floor(vLen / 2);
+                    const middleThreshold = Math.floor(vLen / 3);
+                    const intersectionIndex = vMatch.cells.findIndex(c =>
+                        c.row === intersectionPoint.row && c.col === intersectionPoint.col
+                    );
+                    if (Math.abs(intersectionIndex - middleIndex) <= middleThreshold) {
+                        return 'T';
+                    }
+                }
             }
         }
 
@@ -427,12 +463,13 @@ class GameLogic {
                 for (const [cellKey, countdown] of bossSystem.bombCells.entries()) {
                     const newCountdown = countdown - 1;
                     if (newCountdown <= 0) {
-                        // 炸弹爆炸，扣除步数
-                        this.game.moves = Math.max(0, this.game.moves - 3);
+                        // 炸弹爆炸，随机扣除1-3步
+                        const stepsToDeduct = Math.floor(Math.random() * 3) + 1;
+                        this.game.moves = Math.max(0, this.game.moves - stepsToDeduct);
                         this.game.uiRenderer.updateMoves(this.game.moves, bossSystem.initialMoves, this.game.gameMode);
                         bossSystem.bombCells.delete(cellKey);
-                        this.game.uiRenderer.showMatchEffect('炸弹爆炸！扣除3步！');
-                        this.game.logSystem.addLog('炸弹', '倒计时归零，扣除3步', 'system');
+                        this.game.uiRenderer.showMatchEffect(`炸弹爆炸！扣除${stepsToDeduct}步！`);
+                        this.game.logSystem.addLog('炸弹', `倒计时归零，扣除${stepsToDeduct}步`, 'system');
                     } else {
                         bossSystem.bombCells.set(cellKey, newCountdown);
                     }

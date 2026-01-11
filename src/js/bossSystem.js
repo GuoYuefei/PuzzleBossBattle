@@ -51,17 +51,15 @@ class BossSystem {
         this.monsterCells.clear();
         this.bombCells.clear();
 
-        // 计算Boss战步数：使用常量配置
-        // 例如：第1关=50步，第10关=50+90+30=170步，第70关=50+690+210=950步
-        const { baseSteps, stepsPerLevel, bonusForTenthLevels } = BOSS_MOVES_CONFIG;
-
-        // 计算到当前关卡的总步数
-        // 已击败的boss数量 = 当前关卡 - 1
-        const defeatedBosses = this.bossLevel - 1;
-        const tenthLevelsPassed = Math.floor(defeatedBosses / 10);
-
-        this.game.moves = baseSteps + (defeatedBosses * stepsPerLevel) + (tenthLevelsPassed * bonusForTenthLevels);
-        this.initialMoves = this.game.moves; // 记录初始步数用于显示
+        // 计算Boss战步数：每过一关在上一关基础上加5步
+        // 第1关=50步，第2关=55步，第3关=60步...
+        if (this.bossLevel === 1) {
+            this.game.moves = 50; // 第一关固定50步
+        } else {
+            // 每过一关增加5步
+            this.game.moves = 50 + (this.bossLevel - 1) * 5;
+        }
+        this.initialMoves = 50; // 显示始终显示基础50步
 
         // 更新Boss UI
         this.game.uiRenderer.updateBossUI(this);

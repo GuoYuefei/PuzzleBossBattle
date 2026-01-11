@@ -1,0 +1,389 @@
+{
+  "version": 1,
+  "lastUpdated": 1768053484928,
+  "plugins": [
+    {
+      "filename": "canvas-design",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\creative-design\\canvas-design",
+        "filename": "canvas-design",
+        "name": "canvas-design",
+        "description": "Create beautiful visual art in .png and .pdf documents using design philosophy. You should use this skill when the user asks to create a poster, piece of art, design, or other static piece. Create original visual designs, never copying existing artists' work to avoid copyright violations.",
+        "category": "skills",
+        "type": "skill",
+        "size": 5554015,
+        "contentHash": "a1f288079624402f30682753c1d43920b6664785698d21d3e7aa197450a6448b",
+        "installedAt": 1768053302064,
+        "updatedAt": 1768053302064
+      }
+    },
+    {
+      "filename": "algorithmic-art",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\creative-design\\algorithmic-art",
+        "filename": "algorithmic-art",
+        "name": "algorithmic-art",
+        "description": "Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or particle systems. Create original algorithmic art rather than copying existing artists' work to avoid copyright violations.",
+        "category": "skills",
+        "type": "skill",
+        "size": 59796,
+        "contentHash": "3bc4092c09804853186524c826bc0621b940bb6122c05b84496dff95388e6eef",
+        "installedAt": 1768053309935,
+        "updatedAt": 1768053309935
+      }
+    },
+    {
+      "filename": "theme-factory",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\creative-design\\theme-factory",
+        "filename": "theme-factory",
+        "name": "theme-factory",
+        "description": "Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.",
+        "category": "skills",
+        "type": "skill",
+        "size": 144106,
+        "contentHash": "c35893e221e28895c52143cc11bf30e41a44817796b39d4b15727dadc9796552",
+        "installedAt": 1768053314114,
+        "updatedAt": 1768053314114
+      }
+    },
+    {
+      "filename": "git-commit-helper",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\development\\git-commit-helper",
+        "filename": "git-commit-helper",
+        "name": "Git Commit Helper",
+        "description": "Generate descriptive commit messages by analyzing git diffs. Use when the user asks for help writing commit messages or reviewing staged changes.",
+        "category": "skills",
+        "type": "skill",
+        "size": 4372,
+        "contentHash": "37344ea1848305f6090075eb23e6e1f8808a79a02e032f6ac96b4ed74e298081",
+        "installedAt": 1768053316253,
+        "updatedAt": 1768053316253
+      }
+    },
+    {
+      "filename": "artifacts-builder",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\development\\artifacts-builder",
+        "filename": "artifacts-builder",
+        "name": "artifacts-builder",
+        "description": "Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.",
+        "category": "skills",
+        "type": "skill",
+        "size": 45844,
+        "contentHash": "8455a64e627d203fd7b43df64c83d8870cb98907aae21edce4ec8eeef651d850",
+        "installedAt": 1768053318443,
+        "updatedAt": 1768053318443
+      }
+    },
+    {
+      "filename": "skill-creator",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\development\\skill-creator",
+        "filename": "skill-creator",
+        "name": "skill-creator",
+        "description": "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.",
+        "category": "skills",
+        "type": "skill",
+        "size": 39179,
+        "contentHash": "8c0ce23bb87be91f5b0853c2e9815617c3858b63acdddfe5da47d2c2d3a60816",
+        "installedAt": 1768053319953,
+        "updatedAt": 1768053319953
+      }
+    },
+    {
+      "filename": "mcp-builder",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\development\\mcp-builder",
+        "filename": "mcp-builder",
+        "name": "mcp-builder",
+        "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate external APIs or services, whether in Python (FastMCP) or Node/TypeScript (MCP SDK).",
+        "category": "skills",
+        "type": "skill",
+        "size": 147050,
+        "contentHash": "b1010e90adcb8fd6bf57640df34ab6454fbf7e4216e150a4620f7caccadc4e63",
+        "installedAt": 1768053320484,
+        "updatedAt": 1768053320484
+      }
+    },
+    {
+      "filename": "webapp-testing",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills\\development\\webapp-testing",
+        "filename": "webapp-testing",
+        "name": "webapp-testing",
+        "description": "Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs.",
+        "category": "skills",
+        "type": "skill",
+        "size": 22406,
+        "contentHash": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2",
+        "installedAt": 1768053322609,
+        "updatedAt": 1768053322609
+      }
+    },
+    {
+      "filename": "golang-pro.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\programming-languages\\golang-pro.md",
+        "filename": "golang-pro.md",
+        "name": "golang-pro",
+        "description": "Write idiomatic Go code with goroutines, channels, and interfaces. Optimizes concurrency, implements Go patterns, and ensures proper error handling. Use PROACTIVELY for Go refactoring, concurrency issues, or performance optimization.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash"
+        ],
+        "category": "programming-languages",
+        "type": "agent",
+        "size": 1271,
+        "contentHash": "e6e5054d4d025ea862c9dd2deada6660ccbeab4fab15dc4746f01b40c793bf2d",
+        "installedAt": 1768053338885,
+        "updatedAt": 1768053338885
+      }
+    },
+    {
+      "filename": "python-pro.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\programming-languages\\python-pro.md",
+        "filename": "python-pro.md",
+        "name": "python-pro",
+        "description": "Write idiomatic Python code with advanced features like decorators, generators, and async/await. Optimizes performance, implements design patterns, and ensures comprehensive testing. Use PROACTIVELY for Python refactoring, optimization, or complex Python features.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash"
+        ],
+        "category": "programming-languages",
+        "type": "agent",
+        "size": 1334,
+        "contentHash": "62d25c614af5e07ceb7e80b6fb398ec070200d0c33b27e11a967b1bda801772a",
+        "installedAt": 1768053343369,
+        "updatedAt": 1768053343369
+      }
+    },
+    {
+      "filename": "typescript-pro.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\programming-languages\\typescript-pro.md",
+        "filename": "typescript-pro.md",
+        "name": "typescript-pro",
+        "description": "Write idiomatic TypeScript with advanced type system features, strict typing, and modern patterns. Masters generic constraints, conditional types, and type inference. Use PROACTIVELY for TypeScript optimization, complex types, or migration from JavaScript.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash"
+        ],
+        "category": "programming-languages",
+        "type": "agent",
+        "size": 1597,
+        "contentHash": "1a9b93af3c4b516a69d6a5a982c7883fbbdb72a628844933d9d337a9182a6075",
+        "installedAt": 1768053348077,
+        "updatedAt": 1768053348077
+      }
+    },
+    {
+      "filename": "javascript-pro.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\programming-languages\\javascript-pro.md",
+        "filename": "javascript-pro.md",
+        "name": "javascript-pro",
+        "description": "Master modern JavaScript with ES6+, async patterns, and Node.js APIs. Handles promises, event loops, and browser/Node compatibility. Use PROACTIVELY for JavaScript optimization, async debugging, or complex JS patterns.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash"
+        ],
+        "category": "programming-languages",
+        "type": "agent",
+        "size": 1239,
+        "contentHash": "6435fbaadcc5840a0b7bdf3537603e7ffebff0c856988107b9f95f86b2a7a301",
+        "installedAt": 1768053353317,
+        "updatedAt": 1768053353317
+      }
+    },
+    {
+      "filename": "git-status.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "commands\\utilities\\git-status.md",
+        "filename": "git-status.md",
+        "name": "git-status",
+        "category": "utilities",
+        "type": "command",
+        "size": 1343,
+        "contentHash": "89acf696c7cbc530e05dd5fe4dee22a07ba0a9e19a585ee4de19a6542ed4253f",
+        "installedAt": 1768053443702,
+        "updatedAt": 1768053443702
+      }
+    },
+    {
+      "filename": "release.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "commands\\git\\release.md",
+        "filename": "release.md",
+        "name": "release",
+        "description": "Create a new Git Flow release branch from develop with version bumping and changelog generation",
+        "allowed_tools": [
+          "Bash(git:*)",
+          "Read",
+          "Edit",
+          "Write"
+        ],
+        "category": "git",
+        "type": "command",
+        "size": 9069,
+        "contentHash": "74d594dc0d45b9308f50fd76046bea454a2a4b3b162ca90982a3519f72ce13ce",
+        "installedAt": 1768053445704,
+        "updatedAt": 1768053445704
+      }
+    },
+    {
+      "filename": "flow-status.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "commands\\git\\flow-status.md",
+        "filename": "flow-status.md",
+        "name": "flow-status",
+        "description": "Display comprehensive Git Flow status including branch type, sync status, changes, and merge targets",
+        "allowed_tools": [
+          "Bash(git:*)",
+          "Read"
+        ],
+        "category": "git",
+        "type": "command",
+        "size": 9310,
+        "contentHash": "3c18df6223ab193999039e7ecf6af930274d68aef903845e3119ffa14b981926",
+        "installedAt": 1768053448410,
+        "updatedAt": 1768053448410
+      }
+    },
+    {
+      "filename": "feature.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "commands\\git\\feature.md",
+        "filename": "feature.md",
+        "name": "feature",
+        "description": "Create a new Git Flow feature branch from develop with proper naming and tracking",
+        "allowed_tools": [
+          "Bash(git:*)"
+        ],
+        "category": "git",
+        "type": "command",
+        "size": 4902,
+        "contentHash": "0faf89d8da203d8f85b3b145598211a873484733afea65d9625cac523a9556ca",
+        "installedAt": 1768053452128,
+        "updatedAt": 1768053452128
+      }
+    },
+    {
+      "filename": "react-performance-optimizer.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\web-tools\\react-performance-optimizer.md",
+        "filename": "react-performance-optimizer.md",
+        "name": "react-performance-optimizer",
+        "description": "Specialist in React performance patterns, bundle optimization, and Core Web Vitals. Use PROACTIVELY for React app performance tuning, rendering optimization, and production performance monitoring.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash",
+          "Grep"
+        ],
+        "category": "web-tools",
+        "type": "agent",
+        "size": 11516,
+        "contentHash": "2cf6ceab13000ee93e8083a325997b976d7eeab3cc7066ec46eb9d4ee7a59263",
+        "installedAt": 1768053472618,
+        "updatedAt": 1768053472618
+      }
+    },
+    {
+      "filename": "web-accessibility-checker.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\web-tools\\web-accessibility-checker.md",
+        "filename": "web-accessibility-checker.md",
+        "name": "web-accessibility-checker",
+        "description": "Web accessibility compliance specialist. Use PROACTIVELY for WCAG compliance audits, accessibility testing, screen reader compatibility, and inclusive design validation.",
+        "tools": [
+          "Read",
+          "Write",
+          "Grep",
+          "Glob"
+        ],
+        "category": "web-tools",
+        "type": "agent",
+        "size": 1422,
+        "contentHash": "fc6578e3099510878463766e85fdcb9668456c2efb470964d153662930a2db0d",
+        "installedAt": 1768053475781,
+        "updatedAt": 1768053475781
+      }
+    },
+    {
+      "filename": "web-vitals-optimizer.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\performance-testing\\web-vitals-optimizer.md",
+        "filename": "web-vitals-optimizer.md",
+        "name": "web-vitals-optimizer",
+        "description": "Core Web Vitals optimization specialist. Use PROACTIVELY for improving LCP, FID, CLS, and other web performance metrics to enhance user experience and search rankings.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash"
+        ],
+        "category": "performance-testing",
+        "type": "agent",
+        "size": 1456,
+        "contentHash": "e1fc9ca9e3a4fac36686460d8dea23de4140db3f32694c48f54c72cc6392f3cd",
+        "installedAt": 1768053481164,
+        "updatedAt": 1768053481164
+      }
+    },
+    {
+      "filename": "cli-ui-designer.md",
+      "type": "agent",
+      "metadata": {
+        "sourcePath": "agents\\development-team\\cli-ui-designer.md",
+        "filename": "cli-ui-designer.md",
+        "name": "cli-ui-designer",
+        "description": "CLI interface design specialist. Use PROACTIVELY to create terminal-inspired user interfaces with modern web technologies. Expert in CLI aesthetics, terminal themes, and command-line UX patterns.",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "MultiEdit",
+          "Glob",
+          "Grep"
+        ],
+        "category": "development-team",
+        "type": "agent",
+        "size": 10678,
+        "contentHash": "930fc94c21819c3ebcbac3e4364fb8a4bb5e3ab0fecfef03b33b985a3818df05",
+        "installedAt": 1768053484928,
+        "updatedAt": 1768053484928
+      }
+    }
+  ]
+}

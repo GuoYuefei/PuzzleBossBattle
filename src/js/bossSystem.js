@@ -15,6 +15,9 @@ class BossSystem {
         this.monsterCells = new Map(); // 小怪格子 {row_col: hp}
         this.bombCells = new Map(); // 炸弹格子 {row_col: countdown}
         this.initialMoves = 30; // Boss战初始步数（用于显示）
+        this.remainingMovesFromPreviousLevel = 0; // 上一关剩余步数
+        this.levelBaseMoves = new Map(); // 每个关卡的基准步数 {关卡: 步数}
+        this.isLevelSelected = false; // 是否是选择关卡
     }
 
     // 初始化Boss
@@ -51,17 +54,29 @@ class BossSystem {
         this.monsterCells.clear();
         this.bombCells.clear();
 
-        // 计算Boss战步数：使用常量配置
-        // 例如：第1关=50步，第10关=50+90+30=170步，第70关=50+690+210=950步
-        const { baseSteps, stepsPerLevel, bonusForTenthLevels } = BOSS_MOVES_CONFIG;
+        // 计算Boss战步数
+        if (this.bossLevel === 1) {
+            // 第一关固定50步
+            this.game.moves = 50;
+            this.initialMoves = 50;
+            this.remainingMovesFromPreviousLevel = 0; // 第一关没有上一关剩余步数
+            this.levelBaseMoves.set(1, 50); // 记录第一关基准步数
+            this.isLevelSelected = false; // 第一关不是选择关卡
+        } else {
+            // 判断是否是选择关卡
+            if (this.isLevelSelected) {
+                // 选择关卡：全部使用初始步数
+                this.game.moves = 50;
+                this.isLevelSelected = false; // 重置标志
+            } else {
+                // 正常通关：基于上一关剩余步数 + 5
+                this.game.moves = this.remainingMovesFromPreviousLevel + 5;
+            }
 
-        // 计算到当前关卡的总步数
-        // 已击败的boss数量 = 当前关卡 - 1
-        const defeatedBosses = this.bossLevel - 1;
-        const tenthLevelsPassed = Math.floor(defeatedBosses / 10);
-
-        this.game.moves = baseSteps + (defeatedBosses * stepsPerLevel) + (tenthLevelsPassed * bonusForTenthLevels);
-        this.initialMoves = this.game.moves; // 记录初始步数用于显示
+            // 更新基准步数
+            this.levelBaseMoves.set(this.bossLevel, this.game.moves);
+            this.initialMoves = 50; // 显示始终显示基础50步
+        }
 
         // 更新Boss UI
         this.game.uiRenderer.updateBossUI(this);
@@ -370,6 +385,12 @@ class BossSystem {
     async bossDefeated() {
         this.game.uiRenderer.showMatchEffect('Boss被击败！');
 
+        // 保存上一关的剩余步数
+        this.remainingMovesFromPreviousLevel = this.game.moves;
+
+        // 更新当前关卡的基准步数为实际剩余步数
+        this.levelBaseMoves.set(this.bossLevel, this.game.moves);
+
         // 保存最高关卡
         this.saveMaxLevel();
 
@@ -417,6 +438,13 @@ class BossSystem {
         this.game.logSystem.addLog('道具奖励', `击败Boss获得 ${randomItem.icon} ${randomItem.name}`, 'item');
     }
 
+    // 设置关卡（用于选择关卡）
+    setLevel(level) {
+        this.bossLevel = level;
+        this.isLevelSelected = true; // 标记为选择关卡
+        this.remainingMovesFromPreviousLevel = 0; // 重置剩余步数
+    }
+
     // 重置Boss系统
     reset() {
         this.bossLevel = 1;
@@ -429,5 +457,8 @@ class BossSystem {
         this.monsterCells.clear();
         this.bombCells.clear();
         this.initialMoves = 30;
+        this.remainingMovesFromPreviousLevel = 0;
+        this.levelBaseMoves.clear();
+        this.isLevelSelected = false;
     }
 }

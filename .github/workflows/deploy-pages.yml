@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   # 每次推送到main分支时触发
   push:
-    branches: [ main ]
+    branches: [ master ]
   # 手动触发
   workflow_dispatch:
 
@@ -42,7 +42,7 @@ jobs:
 
   # 部署任务
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

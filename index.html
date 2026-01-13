@@ -19,63 +19,75 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
+            padding: 5px;
             overflow-x: hidden;
         }
 
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             width: 100%;
             max-width: 500px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
+            font-size: clamp(20px, 5vw, 24px);
+            margin-bottom: 3px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .score-board {
             display: flex;
-            gap: 20px;
+            gap: 10px;
             justify-content: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
         }
 
         .score-item {
             background: rgba(255,255,255,0.2);
-            padding: 8px 15px;
-            border-radius: 20px;
+            padding: 5px 12px;
+            border-radius: 15px;
             color: white;
-            font-size: 14px;
+            font-size: clamp(12px, 3vw, 14px);
             backdrop-filter: blur(10px);
         }
 
         .score-item span {
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(14px, 4vw, 18px);
         }
 
         .game-container {
             background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 10px;
+            border-radius: 12px;
+            padding: 5px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
             max-width: 95vw;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #game-board {
             display: grid;
             grid-template-columns: repeat(11, 1fr);
-            gap: 2px;
+            gap: 1px;
             background: rgba(0,0,0,0.2);
-            padding: 5px;
-            border-radius: 10px;
-            max-width: 95vw;
-            max-height: 70vh;
+            padding: 3px;
+            border-radius: 8px;
+            width: 100%;
+            max-height: 60vh;
             aspect-ratio: 1;
         }
 
@@ -112,8 +124,8 @@
         }
 
         .piece {
-            width: 80%;
-            height: 80%;
+            width: 70%;
+            height: 70%;
             transition: all 0.2s ease;
         }
 
@@ -182,22 +194,24 @@
         }
 
         .controls {
-            margin-top: 15px;
+            margin-top: 10px;
             display: flex;
-            gap: 10px;
+            gap: 5px;
             flex-wrap: wrap;
             justify-content: center;
+            padding: 0 5px;
         }
 
         button {
             background: rgba(255,255,255,0.9);
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: clamp(10px, 3vw, 14px);
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            min-height: 32px;
         }
 
         button:hover {
@@ -292,10 +306,47 @@
         /* 道具样式 */
         #items {
             display: flex;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 8px;
+            margin-top: 8px;
             flex-wrap: wrap;
             justify-content: center;
+            padding: 0 5px;
+        }
+
+        .item-button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 12px;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 40px;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .item-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .item-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .item-icon {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .item-count {
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
         }
 
         .item {
@@ -629,33 +680,45 @@
         .boss-panel {
             display: none;
             background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
             backdrop-filter: blur(10px);
         }
 
         .boss-panel.active {
             display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .boss-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
 
         .boss-avatar {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-size: 30px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
             position: relative;
         }
 
@@ -674,22 +737,22 @@
         }
 
         .boss-name {
-            font-size: 18px;
+            font-size: clamp(14px, 3.5vw, 18px);
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .boss-level {
-            font-size: 14px;
+            font-size: clamp(12px, 3vw, 14px);
             color: #ffd700;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .boss-hp-bar {
             width: 100%;
-            height: 20px;
+            height: 16px;
             background: rgba(0,0,0,0.3);
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
             position: relative;
         }
@@ -707,7 +770,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 12px;
+            font-size: clamp(10px, 2.5vw, 12px);
             font-weight: bold;
             white-space: nowrap;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
@@ -720,10 +783,10 @@
 
         .boss-shield-bar {
             width: 100%;
-            height: 8px;
+            height: 6px;
             background: rgba(52, 152, 219, 0.3);
-            border-radius: 4px;
-            margin-top: 5px;
+            border-radius: 3px;
+            margin-top: 3px;
             overflow: hidden;
         }
 
@@ -941,15 +1004,104 @@
             padding: 15px;
             font-size: 16px;
         }
+
+        /* 移动端优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 3px;
+            }
+
+            .header {
+                margin-bottom: 3px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-bottom: 2px;
+            }
+
+            .score-item {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+
+            .score-item span {
+                font-size: 12px;
+            }
+
+            .controls {
+                gap: 3px;
+                padding: 0 3px;
+            }
+
+            button {
+                padding: 4px 8px;
+                font-size: 10px;
+                min-height: 28px;
+            }
+
+            #items {
+                gap: 5px;
+                padding: 0 3px;
+            }
+
+            .item-button {
+                min-width: 35px;
+                height: 35px;
+            }
+
+            .item-icon {
+                font-size: 16px;
+            }
+
+            .item-count {
+                font-size: 9px;
+            }
+
+            .game-container {
+                padding: 3px;
+            }
+
+            #game-board {
+                gap: 0;
+                padding: 2px;
+            }
+
+            .cell {
+                border-radius: 4px;
+            }
+
+            .piece {
+                width: 65%;
+                height: 65%;
+            }
+
+            .triangle {
+                border-left-width: 8px;
+                border-right-width: 8px;
+                border-bottom-width: 14px;
+            }
+
+            .square, .circle {
+                width: 18px;
+                height: 18px;
+            }
+
+            .star {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            #game-board {
+                max-height: 50vh;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>消消乐</h1>
-        <div class="mode-selection">
-            <button class="mode-btn active" id="classic-mode-btn" onclick="game.switchMode('classic')">经典模式</button>
-            <button class="mode-btn" id="boss-mode-btn" onclick="game.switchMode('boss')">Boss战模式</button>
-        </div>
         <div class="score-board">
             <div class="score-item">分数: <span id="score">0</span></div>
             <div class="score-item">步数: <span id="moves">30</span></div>
@@ -992,6 +1144,7 @@
     <div id="items"></div>
 
     <div class="controls">
+        <button onclick="window.location.href='start.html'">🏠 返回主页</button>
         <button onclick="game.showRanking()">排行榜</button>
         <button onclick="game.restart()">重新开始</button>
         <button onclick="game.showRules()">规则</button>

@@ -798,7 +798,9 @@ class GameLogic {
 
         // 检查游戏是否结束
         if (this.game.moves <= 0) {
-            this.game.endGame();
+            // 步数到0时，Boss战模式视为失败，经典模式正常结束
+            const isVictory = this.game.gameMode !== 'boss';
+            this.game.endGame(isVictory);
         }
     }
 }

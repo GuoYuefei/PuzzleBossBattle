@@ -114,21 +114,23 @@ class Match3Game {
 
         this.gameMode = mode;
 
-        // 更新UI按钮状态
-        document.getElementById('classic-mode-btn').classList.toggle('active', mode === 'classic');
-        document.getElementById('boss-mode-btn').classList.toggle('active', mode === 'boss');
-
         // 显示/隐藏Boss面板
         const bossPanel = document.getElementById('boss-panel');
-        bossPanel.classList.toggle('active', mode === 'boss');
+        if (bossPanel) {
+            bossPanel.classList.toggle('active', mode === 'boss');
+        }
 
         // 显示/隐藏玩家血量条
         const playerHpBar = document.getElementById('player-hp-container');
-        playerHpBar.classList.toggle('active', mode === 'boss');
+        if (playerHpBar) {
+            playerHpBar.classList.toggle('active', mode === 'boss');
+        }
 
         // 显示/隐藏关卡选择按钮
         const levelSelectBtn = document.getElementById('level-select-btn');
-        levelSelectBtn.style.display = mode === 'boss' ? 'inline-block' : 'none';
+        if (levelSelectBtn) {
+            levelSelectBtn.style.display = mode === 'boss' ? 'inline-block' : 'none';
+        }
 
         // 重新开始游戏
         this.restart();

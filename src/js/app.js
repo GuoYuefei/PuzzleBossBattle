@@ -1,11 +1,6 @@
 // 消消乐游戏主类
 class Match3Game {
     constructor() {
-        // 检查是否从开始页面进入
-        if (!localStorage.getItem('gameStarted')) {
-            window.location.href = 'start.html';
-            return;
-        }
         // 基本配置
         this.boardSize = BOARD_SIZE;
         this.board = [];

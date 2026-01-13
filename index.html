@@ -1479,476 +1479,263 @@
 
         // 显示排行榜
         function showLeaderboard() {
-            let leaderboardHtml = '' +
-                '<!DOCTYPE html>' +
-                '<html lang="zh-CN">' +
-                '<head>' +
-                '<meta charset="UTF-8">' +
-                '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">' +
-                '<title>排行榜 - 消消乐</title>' +
-                '<style>' +
-                'body {' +
-                '    font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;' +
-                '    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' +
-                '    min-height: 100vh;' +
-                '    display: flex;' +
-                '    flex-direction: column;' +
-                '    align-items: center;' +
-                '    padding: 20px;' +
-                '    color: white;' +
-                '    -webkit-tap-highlight-color: transparent;' +
-                '}' +
-                '' +
-                '.header {' +
-                '    width: 100%;' +
-                '    text-align: center;' +
-                '    margin-bottom: 30px;' +
-                '}' +
-                '' +
-                '.header h1 {' +
-                '    font-size: clamp(24px, 6vw, 36px);' +
-                '    margin-bottom: 10px;' +
-                '}' +
-                '' +
-                '.back-button {' +
-                '    background: rgba(255,255,255,0.2);' +
-                '    border: none;' +
-                '    border-radius: 20px;' +
-                '    padding: 8px 16px;' +
-                '    color: white;' +
-                '    cursor: pointer;' +
-                '    font-size: 14px;' +
-                '    transition: background 0.3s;' +
-                '}' +
-                '' +
-                '.back-button:hover {' +
-                '    background: rgba(255,255,255,0.3);' +
-                '}' +
-                '' +
-                '.leaderboard-container {' +
-                '    width: 100%;' +
-                '    max-width: 400px;' +
-                '    background: rgba(255,255,255,0.1);' +
-                '    backdrop-filter: blur(10px);' +
-                '    border-radius: 20px;' +
-                '    padding: 20px;' +
-                '    box-shadow: 0 8px 32px rgba(0,0,0,0.2);' +
-                '}' +
-                '' +
-                '.mode-tabs {' +
-                '    display: flex;' +
-                '    margin-bottom: 20px;' +
-                '    background: rgba(255,255,255,0.1);' +
-                '    border-radius: 12px;' +
-                '    padding: 4px;' +
-                '}' +
-                '' +
-                '.mode-tab {' +
-                '    flex: 1;' +
-                '    background: none;' +
-                '    border: none;' +
-                '    color: rgba(255,255,255,0.7);' +
-                '    padding: 10px;' +
-                '    cursor: pointer;' +
-                '    border-radius: 8px;' +
-                '    transition: all 0.3s;' +
-                '    font-size: 14px;' +
-                '    font-weight: 500;' +
-                '}' +
-                '' +
-                '.mode-tab.active {' +
-                '    background: rgba(255,255,255,0.2);' +
-                '    color: white;' +
-                '}' +
-                '' +
-                '.leaderboard-list {' +
-                '    list-style: none;' +
-                '}' +
-                '' +
-                '.leaderboard-item {' +
-                '    display: flex;' +
-                '    align-items: center;' +
-                '    padding: 12px;' +
-                '    margin-bottom: 8px;' +
-                '    background: rgba(255,255,255,0.1);' +
-                '    border-radius: 12px;' +
-                '    transition: transform 0.2s;' +
-                '}' +
-                '' +
-                '.leaderboard-item:hover {' +
-                '    transform: translateX(5px);' +
-                '}' +
-                '' +
-                '.rank {' +
-                '    width: 30px;' +
-                '    height: 30px;' +
-                '    border-radius: 50%;' +
-                '    display: flex;' +
-                '    align-items: center;' +
-                '    justify-content: center;' +
-                '    font-weight: bold;' +
-                '    margin-right: 15px;' +
-                '    font-size: 14px;' +
-                '}' +
-                '' +
-                '.rank-1 { background: #FFD700; color: #333; }' +
-                '.rank-2 { background: #C0C0C0; color: #333; }' +
-                '.rank-3 { background: #CD7F32; color: white; }' +
-                '.rank-other { background: rgba(255,255,255,0.3); color: white; }' +
-                '' +
-                '.player-info {' +
-                '    flex: 1;' +
-                '}' +
-                '' +
-                '.player-name {' +
-                '    font-size: 16px;' +
-                '    margin-bottom: 4px;' +
-                '}' +
-                '' +
-                '.player-score {' +
-                '    font-size: 14px;' +
-                '    opacity: 0.8;' +
-                '}' +
-                '' +
-                '.no-scores {' +
-                '    text-align: center;' +
-                '    padding: 40px 20px;' +
-                '    opacity: 0.7;' +
-                '}' +
-                '' +
-                '@media (max-width: 480px) {' +
-                '    .leaderboard-container {' +
-                '        padding: 15px;' +
-                '    }' +
-                '}' +
-                '</style>' +
-                '</head>' +
-                '<body>' +
-                '<div class="header">' +
-                '    <button class="back-button" onclick="closeLeaderboard()">← 返回</button>' +
-                '    <h1>排行榜</h1>' +
-                '</div>' +
-                '' +
-                '<div class="leaderboard-container">' +
-                '    <div class="mode-tabs">' +
-                '        <button class="mode-tab active" onclick="switchTab(\'classic\')">经典模式</button>' +
-                '        <button class="mode-tab" onclick="switchTab(\'boss\')">Boss战模式</button>' +
-                '    </div>' +
-                '' +
-                '    <div id="leaderboard-content">' +
-                '        <div id="classic-leaderboard" class="leaderboard-section">' +
-                '            <ul class="leaderboard-list" id="classic-list"></ul>' +
-                '        </div>' +
-                '        <div id="boss-leaderboard" class="leaderboard-section" style="display: none;">' +
-                '            <ul class="leaderboard-list" id="boss-list"></ul>' +
-                '        </div>' +
-                '    </div>' +
-                '</div>' +
-                '' +
-                '<script>' +
-                '    function closeLeaderboard() {' +
-                '        document.body.style.opacity = \'0\';' +
-                '        setTimeout(() => {' +
-                '            document.body.style.display = \'none\';' +
-                '        }, 300);' +
-                '    }' +
-                '' +
-                '    function switchTab(mode) {' +
-                '        document.querySelectorAll(\'.mode-tab\').forEach(tab => {' +
-                '            tab.classList.remove(\'active\');' +
-                '        });' +
-                '        event.target.classList.add(\'active\');' +
-                '' +
-                '        document.getElementById(\'classic-leaderboard\').style.display = mode === \'classic\' ? \'block\' : \'none\';' +
-                '        document.getElementById(\'boss-leaderboard\').style.display = mode === \'boss\' ? \'block\' : \'none\';' +
-                '' +
-                '        loadLeaderboard(mode);' +
-                '    }' +
-                '' +
-                '    function loadLeaderboard(mode) {' +
-                '        const key = mode === \'classic\' ? \'classicScores\' : \'bossScores\';' +
-                '        const scores = JSON.parse(localStorage.getItem(key) || \'[]\');' +
-                '        const listElement = document.getElementById(mode === \'classic\' ? \'classic-list\' : \'boss-list\');' +
-                '' +
-                '        if (scores.length === 0) {' +
-                '            listElement.innerHTML = \'<div class="no-scores">暂无记录</div>\';' +
-                '            return;' +
-                '        }' +
-                '' +
-                '        let html = \'\';' +
-                '        scores.sort((a, b) => b.score - a.score).forEach((entry, index) => {' +
-                '            const rankClass = index < 3 ? \'rank-\' + (index + 1) : \'rank-other\';' +
-                '            html += \'<li class="leaderboard-item"><div class="rank \' + rankClass + \'">\' + (index + 1) + \'</div><div class="player-info"><div class="player-name">\' + entry.name + \'</div><div class="player-score">\' + entry.score + \' 分 - \' + entry.steps + \' 步</div></div></li>\';' +
-                '        });' +
-                '        listElement.innerHTML = html;' +
-                '    }' +
-                '' +
-                '    window.addEventListener(\'load\', () => {' +
-                '        loadLeaderboard(\'classic\');' +
-                '    });' +
-                '</script>' +
-                '</body>' +
-                '</html>' +
-                '';
-
-
+            // 创建模态框
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.8);
-                z-index: 10000;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            `;
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center;';
 
-            const iframe = document.createElement('iframe');
-            iframe.style.cssText = `
-                width: 100%;
-                height: 100%;
-                border: none;
-                background: transparent;
-            `;
+            // 创建内容容器
+            const content = document.createElement('div');
+            content.style.cssText = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 20px; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto; color: white;';
 
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(leaderboardHtml);
-            iframeDoc.close();
+            // 创建标题和关闭按钮
+            const header = document.createElement('div');
+            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;';
 
-            modal.appendChild(iframe);
+            const title = document.createElement('h2');
+            title.textContent = '排行榜';
+            title.style.cssText = 'margin: 0; font-size: 24px;';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '×';
+            closeBtn.style.cssText = 'background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;';
+            closeBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+
+            header.appendChild(title);
+            header.appendChild(closeBtn);
+
+            // 创建模式切换标签
+            const tabs = document.createElement('div');
+            tabs.style.cssText = 'display: flex; margin-bottom: 20px; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 4px;';
+
+            const classicTab = document.createElement('button');
+            classicTab.textContent = '经典模式';
+            classicTab.style.cssText = 'flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 8px; font-size: 14px; font-weight: 500;';
+            classicTab.onclick = function() {
+                classicTab.style.background = 'rgba(255,255,255,0.2)';
+                bossTab.style.background = 'none';
+                loadLeaderboard('classic', list);
+            };
+
+            const bossTab = document.createElement('button');
+            bossTab.textContent = 'Boss战模式';
+            bossTab.style.cssText = 'flex: 1; background: none; border: none; color: rgba(255,255,255,0.7); padding: 10px; cursor: pointer; border-radius: 8px; font-size: 14px; font-weight: 500;';
+            bossTab.onclick = function() {
+                bossTab.style.background = 'rgba(255,255,255,0.2)';
+                bossTab.style.color = 'white';
+                classicTab.style.background = 'none';
+                classicTab.style.color = 'rgba(255,255,255,0.7)';
+                loadLeaderboard('boss', list);
+            };
+
+            tabs.appendChild(classicTab);
+            tabs.appendChild(bossTab);
+
+            // 创建排行榜列表
+            const list = document.createElement('ul');
+            list.style.cssText = 'list-style: none; margin: 0; padding: 0;';
+
+            // 加载排行榜数据
+            function loadLeaderboard(mode, listElement) {
+                const key = mode === 'classic' ? 'classicScores' : 'bossScores';
+                const scores = JSON.parse(localStorage.getItem(key) || '[]');
+
+                listElement.innerHTML = '';
+
+                if (scores.length === 0) {
+                    const noScores = document.createElement('div');
+                    noScores.textContent = '暂无记录';
+                    noScores.style.cssText = 'text-align: center; padding: 40px 20px; opacity: 0.7;';
+                    listElement.appendChild(noScores);
+                    return;
+                }
+
+                scores.sort((a, b) => b.score - a.score).forEach((entry, index) => {
+                    const item = document.createElement('li');
+                    item.style.cssText = 'display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.1); border-radius: 12px;';
+
+                    const rank = document.createElement('div');
+                    rank.textContent = index + 1;
+                    rank.style.cssText = 'width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;';
+
+                    if (index === 0) {
+                        rank.style.background = '#FFD700';
+                        rank.style.color = '#333';
+                    } else if (index === 1) {
+                        rank.style.background = '#C0C0C0';
+                        rank.style.color = '#333';
+                    } else if (index === 2) {
+                        rank.style.background = '#CD7F32';
+                        rank.style.color = 'white';
+                    } else {
+                        rank.style.background = 'rgba(255,255,255,0.3)';
+                        rank.style.color = 'white';
+                    }
+
+                    const playerInfo = document.createElement('div');
+                    playerInfo.style.cssText = 'flex: 1;';
+
+                    const playerName = document.createElement('div');
+                    playerName.textContent = entry.name;
+                    playerName.style.cssText = 'font-size: 16px; margin-bottom: 4px;';
+
+                    const playerScore = document.createElement('div');
+                    playerScore.textContent = entry.score + ' 分 - ' + entry.steps + ' 步';
+                    playerScore.style.cssText = 'font-size: 14px; opacity: 0.8;';
+
+                    playerInfo.appendChild(playerName);
+                    playerInfo.appendChild(playerScore);
+
+                    item.appendChild(rank);
+                    item.appendChild(playerInfo);
+                    listElement.appendChild(item);
+                });
+            }
+
+            // 组装所有元素
+            content.appendChild(header);
+            content.appendChild(tabs);
+            content.appendChild(list);
+            modal.appendChild(content);
             document.body.appendChild(modal);
 
-            modal.addEventListener('click', (e) => {
+            // 初始加载经典模式排行榜
+            loadLeaderboard('classic', list);
+
+            // 点击模态框背景关闭
+            modal.addEventListener('click', function(e) {
                 if (e.target === modal) {
-                    modal.remove();
+                    document.body.removeChild(modal);
                 }
             });
         }
 
         // 显示游戏说明
         function showAbout() {
-            let aboutHtml = '' +
-                '<!DOCTYPE html>' +
-                '<html lang="zh-CN">' +
-                '<head>' +
-                '<meta charset="UTF-8">' +
-                '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">' +
-                '<title>游戏说明 - 消消乐</title>' +
-                '<style>' +
-                'body {' +
-                '    font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;' +
-                '    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' +
-                '    min-height: 100vh;' +
-                '    display: flex;' +
-                '    flex-direction: column;' +
-                '    padding: 20px;' +
-                '    color: white;' +
-                '    -webkit-tap-highlight-color: transparent;' +
-                '}' +
-                '' +
-                '.header {' +
-                '    width: 100%;' +
-                '    text-align: center;' +
-                '    margin-bottom: 30px;' +
-                '}' +
-                '' +
-                '.header h1 {' +
-                '    font-size: clamp(24px, 6vw, 36px);' +
-                '    margin-bottom: 10px;' +
-                '}' +
-                '' +
-                '.back-button {' +
-                '    background: rgba(255,255,255,0.2);' +
-                '    border: none;' +
-                '    border-radius: 20px;' +
-                '    padding: 8px 16px;' +
-                '    color: white;' +
-                '    cursor: pointer;' +
-                '    font-size: 14px;' +
-                '    transition: background 0.3s;' +
-                '}' +
-                '' +
-                '.back-button:hover {' +
-                '    background: rgba(255,255,255,0.3);' +
-                '}' +
-                '' +
-                '.content-container {' +
-                '    width: 100%;' +
-                '    max-width: 600px;' +
-                '    background: rgba(255,255,255,0.1);' +
-                '    backdrop-filter: blur(10px);' +
-                '    border-radius: 20px;' +
-                '    padding: 30px;' +
-                '    box-shadow: 0 8px 32px rgba(0,0,0,0.2);' +
-                '    flex: 1;' +
-                '}' +
-                '' +
-                '.game-mode {' +
-                '    margin-bottom: 30px;' +
-                '}' +
-                '' +
-                '.mode-title {' +
-                '    font-size: 20px;' +
-                '    font-weight: bold;' +
-                '    margin-bottom: 15px;' +
-                '    color: #FFD700;' +
-                '}' +
-                '' +
-                '.mode-description {' +
-                '    line-height: 1.6;' +
-                '    margin-bottom: 15px;' +
-                '    opacity: 0.9;' +
-                '}' +
-                '' +
-                '.features {' +
-                '    background: rgba(255,255,255,0.1);' +
-                '    border-radius: 12px;' +
-                '    padding: 20px;' +
-                '    margin-top: 20px;' +
-                '}' +
-                '' +
-                '.features h3 {' +
-                '    margin-bottom: 15px;' +
-                '    font-size: 18px;' +
-                '}' +
-                '' +
-                '.feature-list {' +
-                '    list-style: none;' +
-                '}' +
-                '' +
-                '.feature-item {' +
-                '    display: flex;' +
-                '    align-items: center;' +
-                '    margin-bottom: 10px;' +
-                '    padding: 8px 12px;' +
-                '    background: rgba(255,255,255,0.05);' +
-                '    border-radius: 8px;' +
-                '    transition: transform 0.2s;' +
-                '}' +
-                '' +
-                '.feature-item:hover {' +
-                '    transform: translateX(5px);' +
-                '}' +
-                '' +
-                '.feature-icon {' +
-                '    font-size: 20px;' +
-                '    margin-right: 12px;' +
-                '}' +
-                '' +
-                '@media (max-width: 480px) {' +
-                '    .content-container {' +
-                '        padding: 20px;' +
-                '    }' +
-                '}' +
-                '</style>' +
-                '</head>' +
-                '<body>' +
-                '<div class="header">' +
-                '    <button class="back-button" onclick="closeAbout()">← 返回</button>' +
-                '    <h1>游戏说明</h1>' +
-                '</div>' +
-                '' +
-                '<div class="content-container">' +
-                '    <div class="game-mode">' +
-                '        <h2 class="mode-title">🎮 经典模式</h2>' +
-                '        <p class="mode-description">' +
-                '            经典消消乐玩法，通过交换相邻的宝石，匹配3个或更多相同颜色的宝石来消除它们。' +
-                '        </p>' +
-                '        <p class="mode-description">' +
-                '            每次消除都会获得分数，尽可能获得更高的分数！' +
-                '        </p>' +
-                '    </div>' +
-                '' +
-                '    <div class="game-mode">' +
-                '        <h2 class="mode-title">⚔️ Boss战模式</h2>' +
-                '        <p class="mode-description">' +
-                '            挑战70个不同的Boss！每个Boss都有独特的技能和血量，你需要通过消除宝石来对Boss造成伤害。' +
-                '        </p>' +
-                '        <p class="mode-description">' +
-                '            Boss会使用技能阻止你，合理使用道具是获胜的关键！' +
-                '        </p>' +
-                '    </div>' +
-                '' +
-                '    <div class="features">' +
-                '        <h3>🎯 游戏特色</h3>' +
-                '        <ul class="feature-list">' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">💎</span>' +
-                '                <span>4种不同的宝石形状</span>' +
-                '            </li>' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">🎁</span>' +
-                '                <span>6种强力道具系统</span>' +
-                '            </li>' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">🏆</span>' +
-                '                <span>排行榜系统，挑战高分</span>' +
-                '            </li>' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">📱</span>' +
-                '                <span>完美适配手机端</span>' +
-                '            </li>' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">✨</span>' +
-                '                <span>流畅的动画效果</span>' +
-                '            </li>' +
-                '            <li class="feature-item">' +
-                '                <span class="feature-icon">💾</span>' +
-                '                <span>自动保存进度</span>' +
-                '            </li>' +
-                '        </ul>' +
-                '    </div>' +
-                '</div>' +
-                '' +
-                '<script>' +
-                '    function closeAbout() {' +
-                '        document.body.style.opacity = \'0\';' +
-                '        setTimeout(() => {' +
-                '            document.body.style.display = \'none\';' +
-                '        }, 300);' +
-                '    }' +
-                '</script>' +
-                '</body>' +
-                '</html>' +
-                '';
-
+            // 创建模态框
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.8);
-                z-index: 10000;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            `;
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center;';
 
-            const iframe = document.createElement('iframe');
-            iframe.style.cssText = `
-                width: 100%;
-                height: 100%;
-                border: none;
-                background: transparent;
-            `;
+            // 创建内容容器
+            const content = document.createElement('div');
+            content.style.cssText = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: white;';
 
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(aboutHtml);
-            iframeDoc.close();
+            // 创建标题和关闭按钮
+            const header = document.createElement('div');
+            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;';
 
-            modal.appendChild(iframe);
+            const title = document.createElement('h2');
+            title.textContent = '游戏说明';
+            title.style.cssText = 'margin: 0; font-size: 24px;';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '×';
+            closeBtn.style.cssText = 'background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;';
+            closeBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+
+            header.appendChild(title);
+            header.appendChild(closeBtn);
+
+            // 创建内容区域
+            const contentContainer = document.createElement('div');
+            contentContainer.style.cssText = 'background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px;';
+
+            // 经典模式说明
+            const classicMode = document.createElement('div');
+            classicMode.style.cssText = 'margin-bottom: 20px;';
+
+            const classicTitle = document.createElement('h3');
+            classicTitle.textContent = '🎮 经典模式';
+            classicTitle.style.cssText = 'font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #FFD700;';
+
+            const classicDesc1 = document.createElement('p');
+            classicDesc1.textContent = '经典消消乐玩法，通过交换相邻的宝石，匹配3个或更多相同颜色的宝石来消除它们。';
+            classicDesc1.style.cssText = 'line-height: 1.6; margin-bottom: 10px; opacity: 0.9;';
+
+            const classicDesc2 = document.createElement('p');
+            classicDesc2.textContent = '每次消除都会获得分数，尽可能获得更高的分数！';
+            classicDesc2.style.cssText = 'line-height: 1.6; margin-bottom: 10px; opacity: 0.9;';
+
+            classicMode.appendChild(classicTitle);
+            classicMode.appendChild(classicDesc1);
+            classicMode.appendChild(classicDesc2);
+
+            // Boss战模式说明
+            const bossMode = document.createElement('div');
+            bossMode.style.cssText = 'margin-bottom: 20px;';
+
+            const bossTitle = document.createElement('h3');
+            bossTitle.textContent = '⚔️ Boss战模式';
+            bossTitle.style.cssText = 'font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #FFD700;';
+
+            const bossDesc1 = document.createElement('p');
+            bossDesc1.textContent = '挑战70个不同的Boss！每个Boss都有独特的技能和血量，你需要通过消除宝石来对Boss造成伤害。';
+            bossDesc1.style.cssText = 'line-height: 1.6; margin-bottom: 10px; opacity: 0.9;';
+
+            const bossDesc2 = document.createElement('p');
+            bossDesc2.textContent = 'Boss会使用技能阻止你，合理使用道具是获胜的关键！';
+            bossDesc2.style.cssText = 'line-height: 1.6; margin-bottom: 10px; opacity: 0.9;';
+
+            bossMode.appendChild(bossTitle);
+            bossMode.appendChild(bossDesc1);
+            bossMode.appendChild(bossDesc2);
+
+            // 游戏特色
+            const features = document.createElement('div');
+            features.style.cssText = 'background: rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; margin-top: 20px;';
+
+            const featuresTitle = document.createElement('h3');
+            featuresTitle.textContent = '🎯 游戏特色';
+            featuresTitle.style.cssText = 'margin-bottom: 15px; font-size: 18px;';
+
+            const featuresList = document.createElement('ul');
+            featuresList.style.cssText = 'list-style: none; margin: 0; padding: 0;';
+
+            const featuresItems = [
+                { icon: '💎', text: '4种不同的宝石形状' },
+                { icon: '🎁', text: '6种强力道具系统' },
+                { icon: '🏆', text: '排行榜系统，挑战高分' },
+                { icon: '📱', text: '完美适配手机端' },
+                { icon: '✨', text: '流畅的动画效果' },
+                { icon: '💾', text: '自动保存进度' }
+            ];
+
+            featuresItems.forEach(item => {
+                const li = document.createElement('li');
+                li.style.cssText = 'display: flex; align-items: center; margin-bottom: 8px; padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 8px;';
+
+                const icon = document.createElement('span');
+                icon.textContent = item.icon;
+                icon.style.cssText = 'font-size: 20px; margin-right: 12px;';
+
+                const text = document.createElement('span');
+                text.textContent = item.text;
+
+                li.appendChild(icon);
+                li.appendChild(text);
+                featuresList.appendChild(li);
+            });
+
+            features.appendChild(featuresTitle);
+            features.appendChild(featuresList);
+
+            // 组装所有元素
+            contentContainer.appendChild(classicMode);
+            contentContainer.appendChild(bossMode);
+            contentContainer.appendChild(features);
+
+            content.appendChild(header);
+            content.appendChild(contentContainer);
+            modal.appendChild(content);
             document.body.appendChild(modal);
 
-            modal.addEventListener('click', (e) => {
+            // 点击模态框背景关闭
+            modal.addEventListener('click', function(e) {
                 if (e.target === modal) {
-                    modal.remove();
+                    document.body.removeChild(modal);
                 }
             });
         }
@@ -1957,6 +1744,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             PageManager.init();
         });
+
+        // 确保函数在全局作用域中
+        window.startClassicMode = startClassicMode;
+        window.startBossMode = startBossMode;
+        window.showLeaderboard = showLeaderboard;
+        window.showAbout = showAbout;
+        window.backToStart = backToStart;
     </script>
 </body>
 </html>

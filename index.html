@@ -1106,9 +1106,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 20px;
             overflow-x: hidden;
-            position: absolute;
-            top: 0;
-            left: 0;
+            z-index: 1;
         }
 
         .start-page.active {
@@ -1263,9 +1261,7 @@
             width: 100%;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: absolute;
-            top: 0;
-            left: 0;
+            z-index: 2;
         }
 
         .game-page.active {
@@ -1408,6 +1404,10 @@
         const PageManager = {
             // 初始化页面
             init() {
+                // 设置初始z-index
+                document.getElementById('start-page').style.zIndex = '2';
+                document.getElementById('game-page').style.zIndex = '1';
+
                 // 检查是否需要显示游戏页面
                 if (localStorage.getItem('gameStarted')) {
                     this.showGamePage();
@@ -1418,15 +1418,25 @@
 
             // 显示开始页面
             showStartPage() {
-                document.getElementById('start-page').classList.add('active');
-                document.getElementById('game-page').classList.remove('active');
+                const startPage = document.getElementById('start-page');
+                const gamePage = document.getElementById('game-page');
+
+                startPage.classList.add('active');
+                gamePage.classList.remove('active');
+                startPage.style.zIndex = '2';
+                gamePage.style.zIndex = '1';
             },
 
             // 显示游戏页面
             showGamePage() {
                 console.log('showGamePage called');
-                document.getElementById('start-page').classList.remove('active');
-                document.getElementById('game-page').classList.add('active');
+                const startPage = document.getElementById('start-page');
+                const gamePage = document.getElementById('game-page');
+
+                startPage.classList.remove('active');
+                gamePage.classList.add('active');
+                startPage.style.zIndex = '1';
+                gamePage.style.zIndex = '2';
 
                 // 如果游戏还没有初始化，则初始化游戏
                 if (!window.game) {

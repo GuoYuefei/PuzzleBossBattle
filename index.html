@@ -81,26 +81,32 @@
         #game-board {
             display: grid;
             grid-template-columns: repeat(11, 1fr);
-            gap: 1px;
-            background: rgba(0,0,0,0.2);
-            padding: 3px;
-            border-radius: 8px;
-            width: 100%;
-            max-height: 60vh;
-            aspect-ratio: 1;
+            gap: 2px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 10px;
+            width: min(95vw, 95vh - 200px);
+            height: min(95vw, 95vh - 200px);
+            margin: 0 auto;
         }
 
         .cell {
-            aspect-ratio: 1;
-            background: rgba(255,255,255,0.8);
-            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: transform 0.1s, background 0.2s;
             position: relative;
             overflow: hidden;
+        }
+
+        .cell:hover {
+            background: rgba(255,255,255,1);
         }
 
         .cell:active {
@@ -1062,12 +1068,15 @@
             }
 
             #game-board {
-                gap: 0;
-                padding: 2px;
+                gap: 1px;
+                padding: 3px;
+                width: min(95vw, 95vh - 150px);
+                height: min(95vw, 95vh - 150px);
             }
 
             .cell {
                 border-radius: 4px;
+                border-width: 1px;
             }
 
             .piece {
@@ -1442,6 +1451,12 @@
                 if (!window.game) {
                     console.log('Initializing game');
                     window.game = new Match3Game();
+
+                    // 根据选择的模式设置游戏模式
+                    const gameMode = localStorage.getItem('gameMode') || 'classic';
+                    if (gameMode === 'boss') {
+                        window.game.switchMode('boss');
+                    }
                 }
             },
 

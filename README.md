@@ -22,16 +22,6 @@
 ## 🚀 快速开始
 
 ### ⚡ 一分钟部署
-#### Windows用户
-```cmd
-# 双击运行构建脚本
-build.bat
-
-# 打开游戏
-双击 dist/index.html
-```
-
-#### 所有用户
 ```bash
 # 1. 安装Python 3（如果未安装）
 # 从 https://www.python.org/downloads/ 下载
@@ -46,30 +36,12 @@ python build.py
 
 ## 🛠️ 构建脚本
 
-### 🎯 推荐构建方式
-
-#### 🔧 build.bat (主构建脚本 - 推荐)
-交互式批处理脚本，最适合Windows用户：
-
-**使用方法：**
-```cmd
-双击 build.bat
-```
-
-**特性：**
-- 🎪 菜单式操作，简单易用
-- 🔍 自动检测Python环境
-- 📊 三种构建选项：
-  1. **Python构建**（推荐 - 压缩+合并）
-  2. **简单复制**（快速部署）
-  3. **PowerShell构建**（Windows环境）
-
-#### 🐍 build.py (Python构建脚本)
-功能最完整的构建工具：
+### 🐍 build.py (Python构建脚本)
+功能完整的构建工具：
 
 **使用方法：**
 ```bash
-# 基本构建（推荐）
+# 基本构建（推荐 - 压缩JS）
 python build.py
 
 # 不压缩JavaScript
@@ -77,21 +49,17 @@ python build.py --no-minify
 
 # 查看帮助
 python build.py --help
+
+# 查看版本
+python build.py --version
 ```
 
 **特性：**
 - 🗜️ 合并所有JS文件到单个HTML
 - ⚡ JavaScript压缩优化（压缩率约35%）
-- 📋 生成构建报告
-- 🔍 版本哈希管理
-
-### 📊 构建方式对比
-
-| 构建方式 | 优点 | 缺点 | 推荐场景 |
-|---------|------|------|----------|
-| **🐍 Python构建** | ✅ 单个HTML文件<br>✅ JS压缩优化<br>✅ 生成构建报告 | ❌ 需要Python环境 | 🚀 生产部署 |
-| **📁 简单复制** | ✅ 无需额外环境<br>✅ 快速简单<br>✅ 保持源码结构 | ❌ 不压缩<br>❌ 文件较多 | 🔧 开发测试 |
-| **⚡ PowerShell构建** | ✅ 错误处理友好<br>✅ Windows原生 | ❌ 需要PowerShell | 💻 Windows环境 |
+- 📋 生成详细的构建报告
+- 🔍 版本哈希管理（基于JS内容）
+- 🎯 命令行参数支持
 
 ### 📁 项目结构
 
@@ -100,7 +68,6 @@ PuzzleBossBattle/
 ├── README.md           # 项目文档
 ├── .gitignore          # Git忽略文件
 ├── index.html          # 主游戏文件
-├── build.bat           # Windows一键构建
 ├── build.py            # Python构建脚本
 ├── src/
 │   └── js/             # JavaScript源代码
@@ -110,7 +77,8 @@ PuzzleBossBattle/
 │       ├── itemSystem.js   # 道具系统
 │       ├── gameLogic.js    # 核心逻辑
 │       ├── uiRenderer.js  # UI渲染
-│       └── app.js         # 主程序
+│       ├── app.js         # 主程序
+│       └── pageController.js  # 页面控制器
 └── dist/               # 构建输出（自动生成）
 ```
 
@@ -122,7 +90,6 @@ PuzzleBossBattle/
 
 ### 🚀 构建脚本
 - `build.py` - Python构建脚本（功能完整）
-- `build.bat` - Windows一键构建（推荐）
 
 ### 📦 输出文件
 构建后生成在 `dist/` 目录：
@@ -158,6 +125,7 @@ PuzzleBossBattle/
 5. `gameLogic.js` - 核心游戏逻辑
 6. `uiRenderer.js` - UI渲染器
 7. `app.js` - 主应用程序
+8. `pageController.js` - 页面控制器
 
 #### 2️⃣ JavaScript压缩（可选）
 压缩内容包括：
@@ -165,7 +133,7 @@ PuzzleBossBattle/
 - 移除多余的空格和换行
 - 优化代码格式
 
-**📊 压缩效果**：约107KB → 约70KB（压缩率约35%）
+**📊 压缩效果**：约126KB → 约82KB（压缩率约35%）
 
 #### 3️⃣ HTML生成
 - 移除原有的 `<script src="src/js/...">` 引用
@@ -182,14 +150,14 @@ PuzzleBossBattle/
 ```
 **✅ 解决方案**：从 [python.org](https://www.python.org/downloads/) 下载安装Python 3.x
 
-#### PowerShell执行策略限制
+#### Python未正确安装
 ```
-错误: PowerShell脚本无法运行
+错误: 'python' 不是内部或外部命令，也不是可运行的程序
 ```
 **✅ 解决方案**：
-- 以管理员身份运行PowerShell
-- 执行: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-- 或使用其他构建方式
+1. 确保Python已正确安装
+2. 将Python添加到系统PATH环境变量
+3. 或使用Python的完整路径，如：`C:\Python311\python.exe build.py`
 
 #### 文件缺失错误
 ```
@@ -217,8 +185,6 @@ PuzzleBossBattle/
 | 构建方式 | 要求 |
 |---------|------|
 | **Python构建** | Python 3.x，标准库: re, datetime, hashlib |
-| **PowerShell构建** | PowerShell 5.1+，Windows 7+ |
-| **简单复制** | Windows批处理支持，无额外要求 |
 
 ## 🔧 技术特性
 
@@ -260,17 +226,14 @@ PuzzleBossBattle/
 ## ⚠️ 重要提示
 
 1. **Python构建**会修改HTML文件，将JS代码内联到HTML中
-2. **简单复制**保持原始文件结构，适合直接部署
-3. 所有构建都会在 `dist/` 目录生成输出
-4. 构建前请确保所有JS文件存在且无语法错误
-5. 建议在构建前备份重要文件
-6. 🎮 游戏数据保存在浏览器的localStorage中，清除浏览器数据会重置游戏进度
-
-💡 **提示**：`build.ps1` 已被 `build.bat` 替代，建议使用 `build.bat` 脚本。
+2. 所有构建都会在 `dist/` 目录生成输出
+3. 构建前请确保所有JS文件存在且无语法错误
+4. 建议在构建前备份重要文件
+5. 🎮 游戏数据保存在浏览器的localStorage中，清除浏览器数据会重置游戏进度
 
 🎮 **祝游戏愉快！**
 
 ---
-**📅 最后更新**：2026年1月12日
+**📅 最后更新**：2026年1月14日
 **🎮 游戏版本**：消消乐 PuzzleBossBattle
 **🔧 构建工具版本**：1.0.0

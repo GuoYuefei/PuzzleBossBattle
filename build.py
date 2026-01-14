@@ -1,461 +1,301 @@
 #!/usr/bin/env python3
 """
-消消乐游戏发布脚本
-将多个JavaScript文件合并压缩，并生成单个HTML文件
+PuzzleBossBattle 构建脚本
+将多个JS文件合并并内联到HTML中，生成单个可部署文件
+
+使用方法：
+    python build.py                    # 默认构建（压缩JS）
+    python build.py --no-minify        # 不压缩JS
+    python build.py --help             # 显示帮助信息
 """
 
 import os
 import re
 import sys
-from datetime import datetime
+import argparse
+import datetime
 import hashlib
-
-class GameBuilder:
-    def __init__(self, project_root):
-        self.project_root = project_root
-        self.src_js_dir = os.path.join(project_root, 'src', 'js')
-        self.index_html = os.path.join(project_root, 'index.html')
-        self.output_dir = os.path.join(project_root, 'dist')
-
-        # 检查是分文件还是单文件
-        self.is_single_file = not os.path.exists(self.src_js_dir)
-
-        if self.is_single_file:
-            # 单文件模式：从index.html中提取JavaScript
-            print("检测到单文件结构，从index.html提取JavaScript")
-            self.js_files_order = ['index.js']
-        else:
-            # 分文件模式：按照index.html中的顺序
-            print("检测到分文件结构，合并src/js目录下的文件")
-            self.js_files_order = [
-                'constants.js',
-                'logSystem.js',
-                'bossSystem.js',
-                'itemSystem.js',
-                'gameLogic.js',
-                'uiRenderer.js',
-                'app.js'
-            ]
-
-        # 创建输出目录
-        os.makedirs(self.output_dir, exist_ok=True)
-
-    def read_file(self, filepath):
-        """读取文件内容"""
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return f.read()
-        except FileNotFoundError:
-            print(f"错误: 文件不存在: {filepath}")
-            return None
-        except Exception as e:
-            print(f"错误: 读取文件失败 {filepath}: {e}")
-            return None
-
-    def write_file(self, filepath, content):
-        """写入文件内容"""
-        try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print(f"[OK] 写入文件: {filepath}")
-        except Exception as e:
-            print(f"错误: 写入文件失败 {filepath}: {e}")
-
-    def minify_js(self, js_content):
-        """安全的JavaScript压缩"""
-        # 移除单行注释
-        js_content = re.sub(r'//.*', '', js_content)
-
-        # 移除多行注释（但要保留内容中的空格以避免粘连）
-        js_content = re.sub(r'/\*\s*([\s\S]*?)\s*\*/', '', js_content)
-
-        # 在运算符前后保留单个空格（避免粘连）
-        js_content = re.sub(r'\s*([+\-*/%&|^<>!=?:,{}()])\s*', r' \1 ', js_content)
-
-        # 在逗号后保留空格
-        js_content = re.sub(r',\s*', ', ', js_content)
-
-        # 在分号后移除空格（除了for语句中）
-        js_content = re.sub(r';\s*(?!for\s*\([^;]*;[^;]*;)', ';', js_content)
-
-        # 在花括号前后保留空格
-        js_content = re.sub(r'\s*{\s*', ' { ', js_content)
-        js_content = re.sub(r'\s*}\s*', ' } ', js_content)
-
-        # 在return语句后保留空格
-        js_content = re.sub(r'return\s+', 'return ', js_content)
-
-        # 保留关键字周围的空格
-        js_content = re.sub(r'\bfunction\s+', 'function ', js_content)
-        js_content = re.sub(r'\bclass\s+', 'class ', js_content)
-        js_content = re.sub(r'\bconst\s+', 'const ', js_content)
-        js_content = re.sub(r'\blet\s+', 'let ', js_content)
-        js_content = re.sub(r'\bvar\s+', 'var ', js_content)
-        js_content = re.sub(r'\bif\s+', 'if ', js_content)
-        js_content = re.sub(r'\belse\s+', 'else ', js_content)
-        js_content = re.sub(r'\bfor\s+', 'for ', js_content)
-        js_content = re.sub(r'\bwhile\s+', 'while ', js_content)
-        js_content = re.sub(r'\bswitch\s+', 'switch ', js_content)
-        js_content = re.sub(r'\bcase\s+', 'case ', js_content)
-        js_content = re.sub(r'\btry\s+', 'try ', js_content)
-        js_content = re.sub(r'\bcatch\s+', 'catch ', js_content)
-        js_content = re.sub(r'\bfinally\s+', 'finally ', js_content)
-        js_content = re.sub(r'\bthrow\s+', 'throw ', js_content)
-        js_content = re.sub(r'\bnew\s+', 'new ', js_content)
-        js_content = re.sub(r'\btypeof\s+', 'typeof ', js_content)
-        js_content = re.sub(r'\binstanceof\s+', 'instanceof ', js_content)
-
-        # 移除多余空格（保留单词之间必要的空格）
-        js_content = re.sub(r'\s+', ' ', js_content).strip()
-
-        # 确保语句末尾有分号
-        js_content = re.sub(r'([^;\}\]])\s*$', r'\1;', js_content, flags=re.MULTILINE)
-
-        # 确保window赋值语句不会被破坏
-        js_content = re.sub(r'window\.\w+\s*=\s*\w+\s*;', lambda m: m.group(0).replace(' ', ''), js_content)
-
-        return js_content
-
-    def merge_js_files(self):
-        """合并所有JavaScript文件"""
-        print("正在合并JavaScript文件...")
-
-        merged_js = []
-        total_size = 0
-
-        if self.is_single_file:
-            # 单文件模式：从index.html中提取script标签内容
-            html_content = self.read_file(self.index_html)
-            if not html_content:
-                return None
-
-            # 提取<script>标签中的JavaScript代码
-            import re
-            script_pattern = r'<script[^>]*>(.*?)</script>'
-            scripts = re.findall(script_pattern, html_content, re.DOTALL)
-
-            for i, script_content in enumerate(scripts):
-                # 清理script内容
-                script_content = script_content.strip()
-                if script_content:  # 只添加非空的script
-                    merged_js.append(f'\n// ===== Script {i+1} =====\n')
-                    merged_js.append(script_content)
-                    total_size += len(script_content)
-                    print(f"  [OK] 提取: Script {i+1} ({len(script_content)} 字节)")
-        else:
-            # 分文件模式：合并各个JS文件，同时提取index.html中的内联script标签
-            # 1. 首先合并src/js目录下的文件
-            for js_file in self.js_files_order:
-                filepath = os.path.join(self.src_js_dir, js_file)
-                content = self.read_file(filepath)
-
-                if content:
-                    # 添加文件分隔注释
-                    merged_js.append(f'\n// ===== {js_file} =====\n')
-                    merged_js.append(content)
-                    total_size += len(content)
-                    print(f"  [OK] 添加: {js_file} ({len(content)} 字节)")
-                else:
-                    print(f"  [ERROR] 跳过: {js_file} (读取失败)")
-
-            # 2. 提取index.html中的内联script标签内容
-            html_content = self.read_file(self.index_html)
-            if html_content:
-                import re
-                script_pattern = r'<script[^>]*>(.*?)</script>'
-                scripts = re.findall(script_pattern, html_content, re.DOTALL)
-
-                for i, script_content in enumerate(scripts):
-                    script_content = script_content.strip()
-                    if script_content:
-                        merged_js.append(f'\n// ===== Inline Script {i+1} from index.html =====\n')
-                        merged_js.append(script_content)
-                        total_size += len(script_content)
-                        print(f"  [OK] 提取: Inline Script {i+1} ({len(script_content)} 字节)")
-
-        merged_content = '\n'.join(merged_js)
-        print(f"[OK] 合并完成: {len(merged_js)} 个代码块, 总计 {total_size} 字节")
-
-        return merged_content
-
-    def compress_js(self, js_content):
-        """压缩JavaScript代码"""
-        print("正在压缩JavaScript代码...")
-
-        original_size = len(js_content)
-        compressed = self.minify_js(js_content)
-        compressed_size = len(compressed)
-
-        compression_rate = (1 - compressed_size / original_size) * 100
-
-        print(f"[OK] 压缩完成: {original_size} → {compressed_size} 字节 (压缩率: {compression_rate:.1f}%)")
-
-        return compressed
-
-    def minify_css(self, css_content):
-        """简单的CSS压缩"""
-        # 移除注释
-        css_content = re.sub(r'/\*[\s\S]*?\*/', '', css_content)
-
-        # 移除多余的空格和换行
-        css_content = re.sub(r'\s+', ' ', css_content)
-        css_content = re.sub(r'\s*([=+\-*/%&|^<>!?:;,{}()\[\]#>~])\s*', r'\1', css_content)
-
-        # 移除选择器之间的多余空格
-        css_content = re.sub(r'\s*([>+~])\s*', r'\1', css_content)
-
-        # 移除规则块前后的空格
-        css_content = re.sub(r'\s*{\s*', ' {', css_content)
-        css_content = re.sub(r'\s*}\s*', '}', css_content)
-
-        # 移除属性值之间的多余空格
-        css_content = re.sub(r';\s+', ';', css_content)
-
-        # 移除规则块内的多余空格（保留属性值内的空格）
-        css_content = re.sub(r'([:;])\s+', r'\1', css_content)
-
-        return css_content.strip()
-
-    def minify_html(self, html_content):
-        """简单的HTML压缩"""
-        # 移除HTML注释
-        html_content = re.sub(r'<!--[\s\S]*?-->', '', html_content)
-
-        # 移除多余的空格和换行（保留标签内的空格）
-        html_content = re.sub(r'>\s+<', '><', html_content)
-        html_content = re.sub(r'\s+\n\s*', '\n', html_content)
-        html_content = re.sub(r'\n\s+', '\n', html_content)
-
-        # 移除标签属性前的多余空格
-        html_content = re.sub(r'\s+([=])', r' \1', html_content)
-        html_content = re.sub(r'(["\'])\s+', r'\1', html_content)
-        html_content = re.sub(r'\s+(["\'])', r'\1', html_content)
-
-        return html_content.strip()
-
-    def generate_single_html(self, js_content, minify_css=True, minify_html=True):
-        """生成单个HTML文件"""
-        print("正在生成单个HTML文件...")
-
-        # 读取原始HTML
-        html_content = self.read_file(self.index_html)
-        if not html_content:
-            return None
-
-        # 提取CSS部分
-        css_start = html_content.find('<style>')
-        css_end = html_content.find('</style>')
-
-        if css_start != -1 and css_end != -1:
-            css_content = html_content[css_start + 7:css_end]
-            remaining_html = html_content[:css_start] + html_content[css_end + 8:]
-
-            # 压缩CSS（如果启用）
-            if minify_css:
-                original_css_size = len(css_content)
-                css_content = self.minify_css(css_content)
-                compressed_css_size = len(css_content)
-                css_compression_rate = (1 - compressed_css_size / original_css_size) * 100
-                print(f"[OK] CSS压缩完成: {original_css_size} → {compressed_css_size} 字节 (压缩率: {css_compression_rate:.1f}%)")
-            else:
-                compressed_css_size = len(css_content)
-                print(f"[OK] CSS未压缩: {compressed_css_size} 字节")
-
-            # 重新插入CSS
-            html_content = remaining_html[:css_start] + '<style>' + css_content + '</style>' + remaining_html[css_start:]
-        else:
-            print("[WARNING] 未找到CSS样式部分")
-
-        # 移除所有的script标签（包括内联和外部引用）
-        import re
-        script_pattern = r'<script[^>]*>(.*?)</script>'
-
-        # 移除所有内联script标签
-        html_content = re.sub(script_pattern, '', html_content, flags=re.DOTALL)
-
-        # 移除外部JS文件引用
-        lines = html_content.split('\n')
-        new_lines = []
-        in_external_script = False
-
-        for line in lines:
-            if '<script src="src/js/' in line:
-                in_external_script = True
-                continue
-            elif in_external_script and '</script>' in line:
-                in_external_script = False
-                continue
-            elif in_external_script:
-                continue
-            else:
-                new_lines.append(line)
-
-        # 重新组合内容
-        html_content = '\n'.join(new_lines)
-
-        print("[OK] 移除了所有script标签（内联和外部引用）")
-
-        # 在</body>标签前插入压缩后的JS
-
-        # 找到</body>标签的位置
-        body_end_pos = html_content.rfind('</body>')
-        if body_end_pos == -1:
-            body_end_pos = html_content.rfind('</html>')
-
-        if body_end_pos != -1:
-            # 构建新的HTML内容
-            new_html = html_content[:body_end_pos]
-            new_html += f'\n\n    <!-- 压缩后的游戏代码 (生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}) -->\n'
-            new_html += '    <script>\n'
-            new_html += js_content
-            new_html += '\n    </script>\n\n'
-            new_html += html_content[body_end_pos:]
-        else:
-            # 如果没有找到</body>标签，直接追加到末尾
-            new_html = html_content
-            new_html += f'\n\n<!-- 压缩后的游戏代码 (生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}) -->\n'
-            new_html += '<script>\n'
-            new_html += js_content
-            new_html += '\n</script>\n'
-
-        # 压缩HTML（如果启用）
-        if minify_html:
-            original_html_size = len(new_html)
-            new_html = self.minify_html(new_html)
-            compressed_html_size = len(new_html)
-            html_compression_rate = (1 - compressed_html_size / original_html_size) * 100
-            print(f"[OK] HTML压缩完成: {original_html_size} → {compressed_html_size} 字节 (压缩率: {html_compression_rate:.1f}%)")
-        else:
-            compressed_html_size = len(new_html)
-            print(f"[OK] HTML未压缩: {compressed_html_size} 字节")
-
-        return new_html
-
-    def calculate_hash(self, content):
-        """计算内容的哈希值"""
-        return hashlib.md5(content.encode('utf-8')).hexdigest()[:8]
-
-    def build(self, minify=True, minify_css=True, minify_html=True):
-        """执行构建过程"""
-        print("=" * 60)
-        print("消消乐游戏发布脚本")
-        print("=" * 60)
-
-        # 1. 合并JS文件
-        merged_js = self.merge_js_files()
-        if not merged_js:
-            print("错误: 合并JS文件失败")
-            return False
-
-        # 2. 压缩JS（可选）
-        if minify:
-            final_js = self.compress_js(merged_js)
-        else:
-            final_js = merged_js
-            print("跳过压缩步骤")
-
-        # 3. 生成单个HTML
-        single_html = self.generate_single_html(final_js, minify_css, minify_html)
-        if not single_html:
-            print("错误: 生成HTML文件失败")
-            return False
-
-        # 4. 计算版本哈希
-        version_hash = self.calculate_hash(final_js)
-
-        # 5. 保存单个HTML文件
-        html_filename = 'index.html'
-        html_path = os.path.join(self.output_dir, html_filename)
-        self.write_file(html_path, single_html)
-
-        # 6. 生成构建报告
-        self.generate_build_report(html_path, version_hash, minify, minify_css, minify_html, len(final_js))
-
-        print("\n" + "=" * 60)
-        print("构建完成!")
-        print(f"输出文件: {html_path}")
-        print(f"文件大小: {len(single_html)/1024:.1f} KB")
-        print(f"版本哈希: {version_hash}")
-        print("=" * 60)
-
+from pathlib import Path
+
+# 版本信息
+VERSION = "1.0.0"
+AUTHOR = "PuzzleBossBattle Team"
+
+# JS文件合并顺序
+JS_FILES = [
+    "src/js/constants.js",
+    "src/js/logSystem.js",
+    "src/js/bossSystem.js",
+    "src/js/itemSystem.js",
+    "src/js/gameLogic.js",
+    "src/js/uiRenderer.js",
+    "src/js/app.js",
+    "src/js/pageController.js"
+]
+
+def parse_arguments():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(
+        description="PuzzleBossBattle 构建脚本 - 合并JS文件到HTML",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  python build.py                    # 默认构建（压缩JS）
+  python build.py --no-minify        # 不压缩JS
+  python build.py --help             # 显示帮助信息
+        """
+    )
+
+    parser.add_argument(
+        "--no-minify", "-n",
+        action="store_true",
+        help="跳过JavaScript压缩，保留可读格式"
+    )
+
+    parser.add_argument(
+        "--version", "-v",
+        action="version",
+        version=f"PuzzleBossBattle 构建脚本 v{VERSION}"
+    )
+
+    return parser.parse_args()
+
+def read_file(file_path):
+    """读取文件内容"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"[错误] 文件不存在: {file_path}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[错误] 读取文件失败 {file_path}: {e}")
+        sys.exit(1)
+
+def write_file(file_path, content):
+    """写入文件内容"""
+    try:
+        # 确保目录存在
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
         return True
+    except Exception as e:
+        print(f"[错误] 写入文件失败 {file_path}: {e}")
+        return False
 
-    def generate_build_report(self, html_path, version_hash, minify, minify_css, minify_html, js_size):
-        """生成构建报告"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        html_size = os.path.getsize(html_path)
+def minify_js(js_code):
+    """简单的JavaScript压缩"""
+    if not js_code:
+        return js_code
 
-        report = f"""# 消消乐游戏构建报告
+    # 移除单行注释
+    js_code = re.sub(r'//.*', '', js_code)
 
-## 构建信息
-- 构建时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-- 版本哈希: {version_hash}
-- JS压缩: {'是' if minify else '否'}
-- CSS压缩: {'是' if minify_css else '否'}
-- HTML压缩: {'是' if minify_html else '否'}
-- JS大小: {js_size} 字节 ({js_size/1024:.1f} KB)
-- HTML大小: {html_size} 字节 ({html_size/1024:.1f} KB)
+    # 移除多行注释
+    js_code = re.sub(r'/\*[\s\S]*?\*/', '', js_code)
 
-## 输出文件
-`index.html` - 完整的游戏文件，包含所有JavaScript和CSS代码
+    # 移除多余的空格和换行
+    # 保留必要的空格（如 var a = 1;）
+    lines = js_code.split('\n')
+    cleaned_lines = []
 
-## 文件结构
-```
-{self.output_dir}/
-└── index.html  # 完整的游戏文件
-```
+    for line in lines:
+        line = line.strip()
+        if line:  # 跳过空行
+            # 移除行尾分号后的空格
+            line = re.sub(r';\s*', ';', line)
+            # 移除赋值操作符周围的空格
+            line = re.sub(r'\s*=\s*', '=', line)
+            line = re.sub(r'\s*\+\s*', '+', line)
+            line = re.sub(r'\s*-\s*', '-', line)
+            line = re.sub(r'\s*\*\s*', '*', line)
+            line = re.sub(r'\s*/\s*', '/', line)
+            line = re.sub(r'\s*,\s*', ',', line)
+            line = re.sub(r'\s*:\s*', ':', line)
+            line = re.sub(r'\s*{\s*', '{', line)
+            line = re.sub(r'\s*}\s*', '}', line)
+            line = re.sub(r'\s*\(\s*', '(', line)
+            line = re.sub(r'\s*\)\s*', ')', line)
+            cleaned_lines.append(line)
 
-## 使用说明
-1. 直接打开 `index.html` 即可运行游戏
-2. 所有JavaScript和CSS代码已内联到HTML中，无需额外文件
-3. 版本哈希用于区分不同构建版本
+    return ' '.join(cleaned_lines)
 
-## 注意事项
-- 此文件为独立文件，可部署到任何静态网站托管服务
-- 游戏数据保存在浏览器的localStorage中
-- 如需更新游戏，只需替换此HTML文件即可
+def merge_js_files(js_files, minify=True):
+    """合并JS文件"""
+    print("📦 开始合并JavaScript文件...")
+
+    all_js_content = []
+    total_size = 0
+
+    for js_file in js_files:
+        if not os.path.exists(js_file):
+            print(f"[错误] JS文件不存在: {js_file}")
+            sys.exit(1)
+
+        content = read_file(js_file)
+        file_size = len(content.encode('utf-8'))
+        total_size += file_size
+
+        print(f"  📄 {js_file} ({file_size:,} 字节)")
+        all_js_content.append(content)
+
+    merged_js = '\n\n'.join(all_js_content)
+
+    if minify:
+        print("🗜️  压缩JavaScript代码...")
+        original_size = len(merged_js.encode('utf-8'))
+        merged_js = minify_js(merged_js)
+        compressed_size = len(merged_js.encode('utf-8'))
+
+        if original_size > 0:
+            compression_rate = (1 - compressed_size / original_size) * 100
+            print(f"  📊 压缩率: {compression_rate:.1f}% ({original_size:,} → {compressed_size:,} 字节)")
+
+    return merged_js, total_size
+
+def generate_version_hash(js_content):
+    """生成版本哈希"""
+    hash_obj = hashlib.md5(js_content.encode('utf-8'))
+    return hash_obj.hexdigest()[:8]
+
+def build_html_template(html_content, js_content, version_hash, build_info):
+    """构建最终的HTML文件"""
+    print("🔧 构建HTML文件...")
+
+    # 移除原有的script标签
+    script_pattern = r'<script src="src/js/[^"]+"></script>\s*'
+    html_content = re.sub(script_pattern, '', html_content)
+
+    # 在</body>标签前插入内联的JS代码
+    js_comment = f"""
+<!--
+==========================================
+PuzzleBossBattle - 构建版本: {version_hash}
+构建时间: {build_info['timestamp']}
+构建方式: {build_info['build_type']}
+文件大小: {build_info['js_size']:,} 字节
+==========================================
+-->
+<script>
+{js_content}
+</script>
 """
 
-        report_path = os.path.join(self.output_dir, f'build_report_{timestamp}.md')
-        self.write_file(report_path, report)
+    # 插入到</body>标签前
+    if '</body>' in html_content:
+        html_content = html_content.replace('</body>', js_comment + '\n</body>')
+    else:
+        # 如果没有找到</body>标签，添加到文件末尾
+        html_content += js_comment
 
+    return html_content
+
+def generate_build_report(args, js_size, version_hash, output_path):
+    """生成构建报告"""
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    build_type = "压缩构建" if not args.no_minify else "非压缩构建"
+
+    report = f"""
+==========================================
+🎮 PuzzleBossBattle 构建报告
+==========================================
+📅 构建时间: {timestamp}
+🔧 构建方式: {build_type}
+📦 版本哈希: {version_hash}
+📊 JS文件大小: {js_size:,} 字节
+📁 输出文件: {output_path}
+==========================================
+✅ 构建成功！
+
+使用方法:
+1. 直接打开 {output_path} 文件
+2. 或部署到Web服务器
+
+💡 提示:
+- 构建版本已包含在HTML注释中
+- 版本哈希用于区分不同构建版本
+- 建议在生产环境使用压缩构建
+==========================================
+"""
+
+    return report
 
 def main():
     """主函数"""
-    # 获取项目根目录
-    project_root = os.path.dirname(os.path.abspath(__file__))
+    print(f"""
+PuzzleBossBattle 构建脚本 v{VERSION}
+==========================================
+    """)
 
-    # 解析命令行参数
-    minify = True
-    minify_css = True
-    minify_html = True
+    # 解析参数
+    args = parse_arguments()
 
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['--help', '-h']:
-            print("用法: python build.py [选项]")
-            print("选项:")
-            print("  --no-minify, -n       跳过JavaScript压缩")
-            print("  --no-css-compress     跳过CSS压缩")
-            print("  --no-html-compress   跳过HTML压缩")
-            print("  --help, -h           显示帮助信息")
-            return
-        else:
-            # 处理参数
-            for arg in sys.argv[1:]:
-                if arg in ['--no-minify', '-n']:
-                    minify = False
-                elif arg in ['--no-css-compress']:
-                    minify_css = False
-                elif arg in ['--no-html-compress']:
-                    minify_html = False
-
-    # 创建构建器并执行构建
-    builder = GameBuilder(project_root)
-    success = builder.build(minify=minify, minify_css=minify_css, minify_html=minify_html)
-
-    if not success:
+    # 检查必要文件
+    if not os.path.exists("index.html"):
+        print("[错误] index.html 文件不存在")
         sys.exit(1)
 
+    if not os.path.exists("src/js"):
+        print("[错误] src/js 目录不存在")
+        sys.exit(1)
 
-if __name__ == '__main__':
-    main()
+    # 读取HTML文件
+    print("📄 读取HTML文件...")
+    html_content = read_file("index.html")
+
+    # 合并JS文件
+    merged_js, js_size = merge_js_files(JS_FILES, minify=not args.no_minify)
+
+    # 生成版本哈希
+    version_hash = generate_version_hash(merged_js)
+
+    # 构建信息
+    build_info = {
+        'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'build_type': "压缩构建" if not args.no_minify else "非压缩构建",
+        'js_size': js_size
+    }
+
+    # 构建HTML
+    final_html = build_html_template(html_content, merged_js, version_hash, build_info)
+
+    # 输出文件
+    output_dir = "dist"
+    output_path = os.path.join(output_dir, "index.html")
+
+    print(f"💾 保存到: {output_path}")
+    if write_file(output_path, final_html):
+        # 生成构建报告
+        report = generate_build_report(args, js_size, version_hash, output_path)
+        print(report)
+
+        # 显示文件大小
+        output_size = len(final_html.encode('utf-8'))
+        print(f"📊 最终文件大小: {output_size:,} 字节")
+
+        # 显示完成信息
+        print("""
+🎉 构建完成！
+==========================================
+现在你可以:
+1. 直接打开 dist/index.html 文件玩游戏
+2. 部署到GitHub Pages或其他Web服务器
+3. 分享给朋友一起玩！
+
+🎮 祝游戏愉快！
+==========================================
+        """)
+    else:
+        print("[错误] 构建失败！")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n[警告] 构建被用户中断")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n[错误] 构建过程中发生错误: {e}")
+        sys.exit(1)

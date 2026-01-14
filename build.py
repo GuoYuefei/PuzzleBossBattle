@@ -17,16 +17,25 @@ class GameBuilder:
         self.index_html = os.path.join(project_root, 'index.html')
         self.output_dir = os.path.join(project_root, 'dist')
 
-        # JS文件加载顺序（按照index.html中的顺序）
-        self.js_files_order = [
-            'constants.js',
-            'logSystem.js',
-            'bossSystem.js',
-            'itemSystem.js',
-            'gameLogic.js',
-            'uiRenderer.js',
-            'app.js'
-        ]
+        # 检查是分文件还是单文件
+        self.is_single_file = not os.path.exists(self.src_js_dir)
+
+        if self.is_single_file:
+            # 单文件模式：从index.html中提取JavaScript
+            print("检测到单文件结构，从index.html提取JavaScript")
+            self.js_files_order = ['index.js']
+        else:
+            # 分文件模式：按照index.html中的顺序
+            print("检测到分文件结构，合并src/js目录下的文件")
+            self.js_files_order = [
+                'constants.js',
+                'logSystem.js',
+                'bossSystem.js',
+                'itemSystem.js',
+                'gameLogic.js',
+                'uiRenderer.js',
+                'app.js'
+            ]
 
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
@@ -53,26 +62,59 @@ class GameBuilder:
             print(f"错误: 写入文件失败 {filepath}: {e}")
 
     def minify_js(self, js_content):
-        """简单的JavaScript压缩"""
-        # 移除注释
+        """安全的JavaScript压缩"""
+        # 移除单行注释
         js_content = re.sub(r'//.*', '', js_content)
-        js_content = re.sub(r'/\*[\s\S]*?\*/', '', js_content)
 
-        # 移除多余的空格和换行
-        js_content = re.sub(r'\s+', ' ', js_content)
-        js_content = re.sub(r'\s*([=+\-*/%&|^<>!?:;,{}()\[\]])\s*', r'\1', js_content)
+        # 移除多行注释（但要保留内容中的空格以避免粘连）
+        js_content = re.sub(r'/\*\s*([\s\S]*?)\s*\*/', '', js_content)
 
-        # 移除语句末尾的分号后的空格
-        js_content = re.sub(r';\s+', ';', js_content)
+        # 在运算符前后保留单个空格（避免粘连）
+        js_content = re.sub(r'\s*([+\-*/%&|^<>!=?:,{}()])\s*', r' \1 ', js_content)
 
-        # 移除函数和对象定义中的多余空格
-        js_content = re.sub(r'function\s+', 'function ', js_content)
-        js_content = re.sub(r'class\s+', 'class ', js_content)
-        js_content = re.sub(r'const\s+', 'const ', js_content)
-        js_content = re.sub(r'let\s+', 'let ', js_content)
-        js_content = re.sub(r'var\s+', 'var ', js_content)
+        # 在逗号后保留空格
+        js_content = re.sub(r',\s*', ', ', js_content)
 
-        return js_content.strip()
+        # 在分号后移除空格（除了for语句中）
+        js_content = re.sub(r';\s*(?!for\s*\([^;]*;[^;]*;)', ';', js_content)
+
+        # 在花括号前后保留空格
+        js_content = re.sub(r'\s*{\s*', ' { ', js_content)
+        js_content = re.sub(r'\s*}\s*', ' } ', js_content)
+
+        # 在return语句后保留空格
+        js_content = re.sub(r'return\s+', 'return ', js_content)
+
+        # 保留关键字周围的空格
+        js_content = re.sub(r'\bfunction\s+', 'function ', js_content)
+        js_content = re.sub(r'\bclass\s+', 'class ', js_content)
+        js_content = re.sub(r'\bconst\s+', 'const ', js_content)
+        js_content = re.sub(r'\blet\s+', 'let ', js_content)
+        js_content = re.sub(r'\bvar\s+', 'var ', js_content)
+        js_content = re.sub(r'\bif\s+', 'if ', js_content)
+        js_content = re.sub(r'\belse\s+', 'else ', js_content)
+        js_content = re.sub(r'\bfor\s+', 'for ', js_content)
+        js_content = re.sub(r'\bwhile\s+', 'while ', js_content)
+        js_content = re.sub(r'\bswitch\s+', 'switch ', js_content)
+        js_content = re.sub(r'\bcase\s+', 'case ', js_content)
+        js_content = re.sub(r'\btry\s+', 'try ', js_content)
+        js_content = re.sub(r'\bcatch\s+', 'catch ', js_content)
+        js_content = re.sub(r'\bfinally\s+', 'finally ', js_content)
+        js_content = re.sub(r'\bthrow\s+', 'throw ', js_content)
+        js_content = re.sub(r'\bnew\s+', 'new ', js_content)
+        js_content = re.sub(r'\btypeof\s+', 'typeof ', js_content)
+        js_content = re.sub(r'\binstanceof\s+', 'instanceof ', js_content)
+
+        # 移除多余空格（保留单词之间必要的空格）
+        js_content = re.sub(r'\s+', ' ', js_content).strip()
+
+        # 确保语句末尾有分号
+        js_content = re.sub(r'([^;\}\]])\s*$', r'\1;', js_content, flags=re.MULTILINE)
+
+        # 确保window赋值语句不会被破坏
+        js_content = re.sub(r'window\.\w+\s*=\s*\w+\s*;', lambda m: m.group(0).replace(' ', ''), js_content)
+
+        return js_content
 
     def merge_js_files(self):
         """合并所有JavaScript文件"""
@@ -81,21 +123,58 @@ class GameBuilder:
         merged_js = []
         total_size = 0
 
-        for js_file in self.js_files_order:
-            filepath = os.path.join(self.src_js_dir, js_file)
-            content = self.read_file(filepath)
+        if self.is_single_file:
+            # 单文件模式：从index.html中提取script标签内容
+            html_content = self.read_file(self.index_html)
+            if not html_content:
+                return None
 
-            if content:
-                # 添加文件分隔注释
-                merged_js.append(f'\n// ===== {js_file} =====\n')
-                merged_js.append(content)
-                total_size += len(content)
-                print(f"  [OK] 添加: {js_file} ({len(content)} 字节)")
-            else:
-                print(f"  [ERROR] 跳过: {js_file} (读取失败)")
+            # 提取<script>标签中的JavaScript代码
+            import re
+            script_pattern = r'<script[^>]*>(.*?)</script>'
+            scripts = re.findall(script_pattern, html_content, re.DOTALL)
+
+            for i, script_content in enumerate(scripts):
+                # 清理script内容
+                script_content = script_content.strip()
+                if script_content:  # 只添加非空的script
+                    merged_js.append(f'\n// ===== Script {i+1} =====\n')
+                    merged_js.append(script_content)
+                    total_size += len(script_content)
+                    print(f"  [OK] 提取: Script {i+1} ({len(script_content)} 字节)")
+        else:
+            # 分文件模式：合并各个JS文件，同时提取index.html中的内联script标签
+            # 1. 首先合并src/js目录下的文件
+            for js_file in self.js_files_order:
+                filepath = os.path.join(self.src_js_dir, js_file)
+                content = self.read_file(filepath)
+
+                if content:
+                    # 添加文件分隔注释
+                    merged_js.append(f'\n// ===== {js_file} =====\n')
+                    merged_js.append(content)
+                    total_size += len(content)
+                    print(f"  [OK] 添加: {js_file} ({len(content)} 字节)")
+                else:
+                    print(f"  [ERROR] 跳过: {js_file} (读取失败)")
+
+            # 2. 提取index.html中的内联script标签内容
+            html_content = self.read_file(self.index_html)
+            if html_content:
+                import re
+                script_pattern = r'<script[^>]*>(.*?)</script>'
+                scripts = re.findall(script_pattern, html_content, re.DOTALL)
+
+                for i, script_content in enumerate(scripts):
+                    script_content = script_content.strip()
+                    if script_content:
+                        merged_js.append(f'\n// ===== Inline Script {i+1} from index.html =====\n')
+                        merged_js.append(script_content)
+                        total_size += len(script_content)
+                        print(f"  [OK] 提取: Inline Script {i+1} ({len(script_content)} 字节)")
 
         merged_content = '\n'.join(merged_js)
-        print(f"[OK] 合并完成: {len(self.js_files_order)} 个文件, 总计 {total_size} 字节")
+        print(f"[OK] 合并完成: {len(merged_js)} 个代码块, 总计 {total_size} 字节")
 
         return merged_content
 
@@ -187,25 +266,36 @@ class GameBuilder:
         else:
             print("[WARNING] 未找到CSS样式部分")
 
-        # 移除原有的JS引用（第1036-1043行）
+        # 移除所有的script标签（包括内联和外部引用）
+        import re
+        script_pattern = r'<script[^>]*>(.*?)</script>'
+
+        # 移除所有内联script标签
+        html_content = re.sub(script_pattern, '', html_content, flags=re.DOTALL)
+
+        # 移除外部JS文件引用
         lines = html_content.split('\n')
         new_lines = []
+        in_external_script = False
 
-        in_js_section = False
         for line in lines:
             if '<script src="src/js/' in line:
-                in_js_section = True
+                in_external_script = True
                 continue
-            elif in_js_section and '</script>' in line:
-                in_js_section = False
+            elif in_external_script and '</script>' in line:
+                in_external_script = False
                 continue
-            elif in_js_section:
+            elif in_external_script:
                 continue
             else:
                 new_lines.append(line)
 
-        # 在</body>标签前插入压缩后的JS
+        # 重新组合内容
         html_content = '\n'.join(new_lines)
+
+        print("[OK] 移除了所有script标签（内联和外部引用）")
+
+        # 在</body>标签前插入压缩后的JS
 
         # 找到</body>标签的位置
         body_end_pos = html_content.rfind('</body>')

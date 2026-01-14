@@ -291,8 +291,4 @@ class Match3Game {
     }
 }
 
-// 启动游戏
-let game;
-document.addEventListener('DOMContentLoaded', () => {
-    game = new Match3Game();
-});
+// 游戏实例将在pageController.js中初始化

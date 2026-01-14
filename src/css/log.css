@@ -16,6 +16,16 @@
     flex-direction: column;
     backdrop-filter: blur(10px);
     box-sizing: border-box;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+#log-container.visible {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 #log-content {
@@ -28,9 +38,6 @@
     /* 限制高度，约显示5-7行 */
 }
 
-#log-container.hidden {
-    display: none;
-}
 
 #log-header {
     display: flex;
@@ -135,22 +142,3 @@
     background: rgba(255,255,255,0.5);
 }
 
-/* 切换按钮（当日志框隐藏时） */
-#show-log-btn {
-    position: fixed;
-    right: 20px;
-    top: 100px;
-    background: rgba(0,0,0,0.8);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    z-index: 49;
-    display: none;
-    backdrop-filter: blur(10px);
-}
-
-#show-log-btn:hover {
-    background: rgba(0,0,0,0.9);
-}

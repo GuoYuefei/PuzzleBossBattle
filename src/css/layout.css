@@ -45,11 +45,11 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.1);
     max-width: 95vw;
     width: 100%;
-    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    margin: 0 auto;
 }
 
 /* 开始页面样式 */
@@ -106,7 +106,8 @@
     align-items: center;
     padding: 5px;
     box-sizing: border-box;
-    height: 100vh;
+    min-height: 100vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
 }

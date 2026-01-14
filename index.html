@@ -86,23 +86,28 @@
 
     <div id="items"></div>
 
-    <div class="controls">
-        <button onclick="backToStart()">🏠 返回主页</button>
-        <button onclick="game.showRanking()">排行榜</button>
-        <button onclick="game.restart()">重新开始</button>
-        <button onclick="game.showRules()">规则</button>
-        <button id="level-select-btn" onclick="game.showLevelSelection()" style="display: none;">选择关卡</button>
+    <!-- 游戏控制栏 -->
+    <div class="game-controls">
+        <div class="controls-left">
+            <button class="control-btn home-btn" onclick="backToStart()" title="返回主页">🏠</button>
+            <button class="control-btn restart-btn" onclick="game.restart()" title="重新开始">🔄</button>
+            <button class="control-btn log-toggle-btn" onclick="game.toggleLog()" title="显示/隐藏日志">📜</button>
+        </div>
+        <div class="controls-right">
+            <button class="control-btn ranking-btn" onclick="game.showRanking()" title="排行榜">🏆</button>
+            <button class="control-btn rules-btn" onclick="game.showRules()" title="游戏规则">📖</button>
+            <button class="control-btn level-select-btn" id="level-select-btn" onclick="game.showLevelSelection()" title="选择关卡" style="display: none;">🎯</button>
+        </div>
     </div>
 
     <!-- 日志容器 -->
-    <div id="log-container">
+    <div id="log-container" class="hidden">
         <div id="log-header">
             <h3>📜 游戏日志</h3>
             <button id="log-toggle" onclick="game.toggleLog()">隐藏</button>
         </div>
         <div id="log-content"></div>
     </div>
-    <button id="show-log-btn" onclick="game.toggleLog()">📜 显示日志</button>
 
     <div class="combo-display" id="combo-display"></div>
 

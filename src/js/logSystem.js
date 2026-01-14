@@ -47,15 +47,12 @@ class LogSystem {
     toggleLog() {
         if (!this.logContainer) return;
 
-        const isHidden = this.logContainer.classList.contains('hidden');
-        const showBtn = document.getElementById('show-log-btn');
+        const isVisible = this.logContainer.classList.contains('visible');
 
-        if (isHidden) {
-            this.logContainer.classList.remove('hidden');
-            showBtn.style.display = 'none';
+        if (isVisible) {
+            this.logContainer.classList.remove('visible');
         } else {
-            this.logContainer.classList.add('hidden');
-            showBtn.style.display = 'block';
+            this.logContainer.classList.add('visible');
         }
     }
 

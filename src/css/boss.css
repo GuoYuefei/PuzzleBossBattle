@@ -1,0 +1,238 @@
+/* boss.css - Boss战相关样式 */
+
+.mode-selection {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.mode-btn {
+    background: rgba(255,255,255,0.9);
+    border: 3px solid transparent;
+    padding: 12px 25px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.mode-btn.active {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.boss-panel {
+    display: none;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.boss-panel.active {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.boss-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.boss-avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.boss-avatar.sealed {
+    animation: sealedBoss 1s ease-in-out infinite;
+}
+
+@keyframes sealedBoss {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(0.5); }
+}
+
+.boss-details {
+    flex: 1;
+    color: white;
+}
+
+.boss-name {
+    font-size: clamp(14px, 3.5vw, 18px);
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.boss-level {
+    font-size: clamp(12px, 3vw, 14px);
+    color: #ffd700;
+    margin-bottom: 3px;
+}
+
+.boss-hp-bar {
+    width: 100%;
+    height: 16px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.boss-hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.boss-hp-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: clamp(10px, 2.5vw, 12px);
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    z-index: 10;
+}
+
+.boss-hp-fill.shielded {
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+}
+
+.boss-shield-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(52, 152, 219, 0.3);
+    border-radius: 3px;
+    margin-top: 3px;
+    overflow: hidden;
+}
+
+.boss-shield-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    transition: width 0.5s ease;
+}
+
+.player-hp-bar {
+    display: none;
+    margin-top: 10px;
+}
+
+.player-hp-bar.active {
+    display: block;
+}
+
+.player-hp-label {
+    color: white;
+    font-size: 14px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.player-hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.skill-seal-indicator {
+    display: none;
+    color: #ffd700;
+    font-size: 14px;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.skill-seal-indicator.active {
+    display: block;
+}
+
+/* Boss技能动画 */
+.skill-animation {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: bold;
+    color: #e74c3c;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 500;
+    animation: skillPopup 1.5s ease-out forwards;
+}
+
+@keyframes skillPopup {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+.damage-number {
+    position: fixed;
+    font-size: 24px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 400;
+    animation: damageFloat 1s ease-out forwards;
+}
+
+.damage-number.damage {
+    color: #e74c3c;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.damage-number.heal {
+    color: #2ecc71;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.damage-number.boss-damage {
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    font-size: 32px;
+}
+
+@keyframes damageFloat {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-50px); }
+}

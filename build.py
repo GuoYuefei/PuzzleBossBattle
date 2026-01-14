@@ -33,6 +33,18 @@ JS_FILES = [
     "src/js/pageController.js"
 ]
 
+# CSS文件合并顺序
+CSS_FILES = [
+    "src/css/base.css",
+    "src/css/layout.css",
+    "src/css/game.css",
+    "src/css/ui.css",
+    "src/css/boss.css",
+    "src/css/animations.css",
+    "src/css/log.css",
+    "src/css/responsive.css"
+]
+
 def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
@@ -122,9 +134,34 @@ def minify_js(js_code):
 
     return ' '.join(cleaned_lines)
 
+def minify_css(css_code):
+    """简单的CSS压缩"""
+    if not css_code:
+        return css_code
+
+    # 移除注释
+    css_code = re.sub(r'/\*[\s\S]*?\*/', '', css_code)
+
+    # 移除多余的空格和换行
+    lines = css_code.split('\n')
+    cleaned_lines = []
+
+    for line in lines:
+        line = line.strip()
+        if line:  # 跳过空行
+            # 移除属性值周围的空格
+            line = re.sub(r'\s*:\s*', ':', line)
+            line = re.sub(r'\s*{\s*', '{', line)
+            line = re.sub(r'\s*}\s*', '}', line)
+            line = re.sub(r'\s*;\s*', ';', line)
+            line = re.sub(r'\s*,\s*', ',', line)
+            cleaned_lines.append(line)
+
+    return ' '.join(cleaned_lines)
+
 def merge_js_files(js_files, minify=True):
     """合并JS文件"""
-    print("📦 开始合并JavaScript文件...")
+    print("[开始] 合并JavaScript文件...")
 
     all_js_content = []
     total_size = 0
@@ -138,52 +175,105 @@ def merge_js_files(js_files, minify=True):
         file_size = len(content.encode('utf-8'))
         total_size += file_size
 
-        print(f"  📄 {js_file} ({file_size:,} 字节)")
+        print(f"  [JS] {js_file} ({file_size:,} 字节)")
         all_js_content.append(content)
 
     merged_js = '\n\n'.join(all_js_content)
 
     if minify:
-        print("🗜️  压缩JavaScript代码...")
+        print("[压缩] JavaScript代码...")
         original_size = len(merged_js.encode('utf-8'))
         merged_js = minify_js(merged_js)
         compressed_size = len(merged_js.encode('utf-8'))
 
         if original_size > 0:
             compression_rate = (1 - compressed_size / original_size) * 100
-            print(f"  📊 压缩率: {compression_rate:.1f}% ({original_size:,} → {compressed_size:,} 字节)")
+            print(f"  [压缩率] {compression_rate:.1f}% ({original_size:,} → {compressed_size:,} 字节)")
 
     return merged_js, total_size
+
+def merge_css_files(css_files, minify=True):
+    """合并CSS文件"""
+    print("[开始] 合并CSS文件...")
+
+    all_css_content = []
+    total_size = 0
+
+    for css_file in css_files:
+        if not os.path.exists(css_file):
+            print(f"[错误] CSS文件不存在: {css_file}")
+            sys.exit(1)
+
+        content = read_file(css_file)
+        file_size = len(content.encode('utf-8'))
+        total_size += file_size
+
+        print(f"  [CSS] {css_file} ({file_size:,} 字节)")
+        all_css_content.append(content)
+
+    merged_css = '\n\n'.join(all_css_content)
+
+    if minify:
+        print("[压缩] CSS代码...")
+        original_size = len(merged_css.encode('utf-8'))
+        merged_css = minify_css(merged_css)
+        compressed_size = len(merged_css.encode('utf-8'))
+
+        if original_size > 0:
+            compression_rate = (1 - compressed_size / original_size) * 100
+            print(f"  [压缩率] {compression_rate:.1f}% ({original_size:,} → {compressed_size:,} 字节)")
+
+    return merged_css, total_size
 
 def generate_version_hash(js_content):
     """生成版本哈希"""
     hash_obj = hashlib.md5(js_content.encode('utf-8'))
     return hash_obj.hexdigest()[:8]
 
-def build_html_template(html_content, js_content, version_hash, build_info):
+def build_html_template(html_content, css_content, js_content, version_hash, build_info):
     """构建最终的HTML文件"""
-    print("🔧 构建HTML文件...")
+    print("[构建] HTML文件...")
 
-    # 移除原有的script标签
+    # 移除原有的CSS和JS引用
+    # 移除CSS链接标签
+    css_pattern = r'<link rel="stylesheet" href="src/css/[^"]+">\s*'
+    html_content = re.sub(css_pattern, '', html_content)
+
+    # 移除script标签
     script_pattern = r'<script src="src/js/[^"]+"></script>\s*'
     html_content = re.sub(script_pattern, '', html_content)
 
-    # 在</body>标签前插入内联的JS代码
-    js_comment = f"""
+    # 在<head>标签后插入内联的CSS代码
+    css_comment = f"""
 <!--
 ==========================================
 PuzzleBossBattle - 构建版本: {version_hash}
 构建时间: {build_info['timestamp']}
 构建方式: {build_info['build_type']}
-文件大小: {build_info['js_size']:,} 字节
+CSS大小: {build_info['css_size']:,} 字节
+JS大小: {build_info['js_size']:,} 字节
 ==========================================
 -->
+<style>
+{css_content}
+</style>
+"""
+
+    # 在</body>标签前插入内联的JS代码
+    js_comment = f"""
 <script>
 {js_content}
 </script>
 """
 
-    # 插入到</body>标签前
+    # 插入CSS到<head>标签后
+    if '<head>' in html_content:
+        # 找到<head>标签的位置
+        head_end = html_content.find('</head>')
+        if head_end != -1:
+            html_content = html_content[:head_end] + css_comment + html_content[head_end:]
+
+    # 插入JS到</body>标签前
     if '</body>' in html_content:
         html_content = html_content.replace('</body>', js_comment + '\n</body>')
     else:
@@ -192,28 +282,31 @@ PuzzleBossBattle - 构建版本: {version_hash}
 
     return html_content
 
-def generate_build_report(args, js_size, version_hash, output_path):
+def generate_build_report(args, css_size, js_size, version_hash, output_path):
     """生成构建报告"""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     build_type = "压缩构建" if not args.no_minify else "非压缩构建"
+    total_size = css_size + js_size
 
     report = f"""
 ==========================================
-🎮 PuzzleBossBattle 构建报告
+PuzzleBossBattle 构建报告
 ==========================================
-📅 构建时间: {timestamp}
-🔧 构建方式: {build_type}
-📦 版本哈希: {version_hash}
-📊 JS文件大小: {js_size:,} 字节
-📁 输出文件: {output_path}
+构建时间: {timestamp}
+构建方式: {build_type}
+版本哈希: {version_hash}
+CSS文件大小: {css_size:,} 字节
+JS文件大小: {js_size:,} 字节
+总文件大小: {total_size:,} 字节
+输出文件: {output_path}
 ==========================================
-✅ 构建成功！
+构建成功！
 
 使用方法:
 1. 直接打开 {output_path} 文件
 2. 或部署到Web服务器
 
-💡 提示:
+提示:
 - 构建版本已包含在HTML注释中
 - 版本哈希用于区分不同构建版本
 - 建议在生产环境使用压缩构建
@@ -241,34 +334,43 @@ PuzzleBossBattle 构建脚本 v{VERSION}
         print("[错误] src/js 目录不存在")
         sys.exit(1)
 
+    if not os.path.exists("src/css"):
+        print("[错误] src/css 目录不存在")
+        sys.exit(1)
+
     # 读取HTML文件
-    print("📄 读取HTML文件...")
+    print("[读取] HTML文件...")
     html_content = read_file("index.html")
+
+    # 合并CSS文件
+    merged_css, css_size = merge_css_files(CSS_FILES, minify=not args.no_minify)
 
     # 合并JS文件
     merged_js, js_size = merge_js_files(JS_FILES, minify=not args.no_minify)
 
-    # 生成版本哈希
-    version_hash = generate_version_hash(merged_js)
+    # 生成版本哈希（基于JS和CSS内容）
+    combined_content = merged_css + merged_js
+    version_hash = generate_version_hash(combined_content)
 
     # 构建信息
     build_info = {
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'build_type': "压缩构建" if not args.no_minify else "非压缩构建",
+        'css_size': css_size,
         'js_size': js_size
     }
 
     # 构建HTML
-    final_html = build_html_template(html_content, merged_js, version_hash, build_info)
+    final_html = build_html_template(html_content, merged_css, merged_js, version_hash, build_info)
 
     # 输出文件
     output_dir = "dist"
     output_path = os.path.join(output_dir, "index.html")
 
-    print(f"💾 保存到: {output_path}")
+    print(f"[保存] 到: {output_path}")
     if write_file(output_path, final_html):
         # 生成构建报告
-        report = generate_build_report(args, js_size, version_hash, output_path)
+        report = generate_build_report(args, css_size, js_size, version_hash, output_path)
         print(report)
 
         # 显示文件大小
@@ -277,14 +379,14 @@ PuzzleBossBattle 构建脚本 v{VERSION}
 
         # 显示完成信息
         print("""
-🎉 构建完成！
+构建完成！
 ==========================================
 现在你可以:
 1. 直接打开 dist/index.html 文件玩游戏
 2. 部署到GitHub Pages或其他Web服务器
 3. 分享给朋友一起玩！
 
-🎮 祝游戏愉快！
+祝游戏愉快！
 ==========================================
         """)
     else:

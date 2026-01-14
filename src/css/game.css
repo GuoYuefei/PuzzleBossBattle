@@ -1,0 +1,201 @@
+/* game.css - 游戏棋盘和单元格样式 */
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 2px;
+    background: rgba(0,0,0,0.3);
+    padding: 5px;
+    border-radius: 10px;
+    width: min(95vw, calc(95vh - 200px));
+    height: min(95vw, calc(95vh - 200px));
+    margin: 0 auto;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1 / 1;
+}
+
+.cell {
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.cell:hover {
+    background: rgba(255,255,255,1);
+}
+
+.cell:active {
+    transform: scale(0.95);
+}
+
+.cell.selected {
+    box-shadow: 0 0 10px 3px rgba(255,255,0,0.8);
+    transform: scale(1.05);
+}
+
+.cell.matched {
+    animation: match 0.3s ease-out forwards;
+}
+
+@keyframes match {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+.piece {
+    width: 70%;
+    height: 70%;
+    transition: all 0.2s ease;
+}
+
+.piece.falling {
+    animation: fall 0.3s ease-in;
+}
+
+@keyframes fall {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 形状样式 */
+.triangle {
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 26px solid;
+    margin: auto;
+}
+
+.square {
+    width: 26px;
+    height: 26px;
+    margin: auto;
+    border-radius: 3px;
+}
+
+.circle {
+    width: 26px;
+    height: 26px;
+    margin: auto;
+    border-radius: 50%;
+}
+
+.star {
+    font-size: 26px;
+    line-height: 1;
+    text-align: center;
+}
+
+/* 颜色 */
+.red {
+    border-bottom-color: #ff4757 !important;
+    background-color: #ff4757 !important;
+    color: #ff4757 !important;
+}
+
+.blue {
+    border-bottom-color: #3498db !important;
+    background-color: #3498db !important;
+    color: #3498db !important;
+}
+
+.green {
+    border-bottom-color: #2ecc71 !important;
+    background-color: #2ecc71 !important;
+    color: #2ecc71 !important;
+}
+
+/* 特殊单元格样式 */
+.frozen-cell {
+    position: relative;
+}
+
+.frozen-cell::after {
+    content: '❄️';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    z-index: 10;
+}
+
+.frozen-cell .piece {
+    opacity: 0.5;
+}
+
+.poisoned-cell {
+    position: relative;
+}
+
+.poisoned-cell::before {
+    content: '☠️';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 12px;
+    z-index: 10;
+}
+
+.monster-cell {
+    position: relative;
+    background: rgba(192, 192, 192, 0.3) !important;
+}
+
+.monster-cell::after {
+    content: attr(data-hp);
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    transform: none;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ff4444;
+    z-index: 10;
+    background: rgba(255,255,255,0.95);
+    padding: 2px 4px;
+    border-radius: 8px;
+    border: 1px solid #ff4444;
+    min-width: 16px;
+    text-align: center;
+}
+
+.bomb-cell {
+    position: relative;
+}
+
+.bomb-cell::after {
+    content: attr(data-countdown);
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    background: #e74c3c;
+    padding: 2px 5px;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.sealed-color {
+    opacity: 0.3;
+}
